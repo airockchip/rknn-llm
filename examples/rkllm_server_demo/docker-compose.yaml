@@ -2,7 +2,8 @@ services:
   rkllm-server:
     build:
       context: ../../
-      dockerfile: examples/rkllm_server_demo/rkllm_server_${RKLLM_SERVER_INTERFACE:-gradio}.dockerfile
+      dockerfile: examples/rkllm_server_demo/Dockerfile
+      target: "${RKLLM_SERVER_INTERFACE:-gradio}-server"
     command:
       [
         "--target_platform",
