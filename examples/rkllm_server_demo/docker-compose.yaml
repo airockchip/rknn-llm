@@ -1,0 +1,22 @@
+services:
+  rkllm-server:
+    build:
+      context: ../../
+      dockerfile: examples/rkllm_server_demo/rkllm_server_${RKLLM_SERVER_INTERFACE:-gradio}.dockerfile
+    command:
+      [
+        "--target_platform",
+        "${RKLLM_TARGET_PLATFORM:-rk3588}",
+        "--rkllm_model_path",
+        "/app/models/${RKLLM_MODEL_FILE:-gemma-2b-it-rk3588.rkllm}",
+      ]
+    ports:
+      - ${RKLLM_SERVER_PORT:-8080}:8080
+    volumes:
+      - ./models:/app/models:ro # *.rkllm models
+      - /sys:/sys:rw # for fix_freq_*.sh scripts
+    devices:
+      - /dev/dri:/dev/dri
+    security_opt:
+      - systempaths=unconfined
+    restart: "no"
