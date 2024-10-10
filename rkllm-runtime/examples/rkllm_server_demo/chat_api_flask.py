@@ -2,53 +2,53 @@ import sys
 import requests
 import json
   
-# 设置 Server 服务器的地址
-server_url = 'http://172.16.10.102:8080/rkllm_chat'
-# 设置是否开启流式对话
+# Set the address of the Server.
+server_url = 'http://172.16.10.79:8080/rkllm_chat'
+# Set whether to enable streaming mode.
 is_streaming = True
 
-# 创建一个会话对象
+# Create a session object.
 session = requests.Session()
-session.keep_alive = False  # 关闭连接池，保持长连接
+session.keep_alive = False  # Close the connection pool to maintain a long connection.
 adapter = requests.adapters.HTTPAdapter(max_retries=5)
 session.mount('https://', adapter)
 session.mount('http://', adapter)
 
 if __name__ == '__main__':
     print("============================")
-    print("在终端中输入您的问题，即可与 RKLLM 模型进行对话....")
+    print("Input your question in the terminal to start a conversation with the RKLLM model...")
     print("============================")
-    # 进入循环，持续获取用户输入，并与RKLLM模型进行对话
+    # Enter a loop to continuously get user input and converse with the RKLLM model.
     while True:
         try:
-            user_message = input("请输入您的问题：")
+            user_message = input("\n*Please enter your question:")
             if user_message == "exit":
                 print("============================")
-                print("程序正在退出......")
+                print("The RKLLM Server is stopping......")
                 print("============================")
                 break
             else:
-                # 设置请求头，此处的请求头实际并无作用，仅为模拟OpenAI接口设计
+                # Set the request headers; in this case, the headers have no actual effect and are only used to simulate the OpenAI interface design.
                 headers = {
                     'Content-Type': 'application/json',
                     'Authorization': 'not_required'
                 }
 
-                # 准备要发送的数据
-                # model: 为用户在设置RKLLM-Server时定义的模型，此处并无作用
-                # messages: 用户输入的问题，RKLLM-Server将会把它作为输入，并返回模型的回复；支持在 messags 加入多个问题
-                # stream: 是否开启流式对话，与OpenAI接口相同
+                # Prepare the data to be sent
+                # model: The model defined by the user when setting up RKLLM-Server; this has no effect here
+                # messages: The user's input question, which RKLLM-Server will use as input and return the model's reply; multiple questions can be added to messages
+                # stream: Whether to enable streaming conversation, similar to the OpenAI interface
                 data = {
                     "model": 'your_model_deploy_with_RKLLM_Server',
                     "messages": [{"role": "user", "content": user_message}],
                     "stream": is_streaming
                 }
 
-                # 发送 POST 请求
+                # Send a POST request
                 responses = session.post(server_url, json=data, headers=headers, stream=is_streaming, verify=False)
 
                 if not is_streaming:
-                    # 解析响应
+                    # Parse the response
                     if responses.status_code == 200:
                         print("Q:", data["messages"][-1]["content"])
                         print("A:", json.loads(responses.text)["choices"][-1]["message"]["content"])
@@ -66,16 +66,13 @@ if __name__ == '__main__':
                                     sys.stdout.flush()
                     else:
                         print('Error:', responses.text)
-
-
-                
-                
+                        
         except KeyboardInterrupt:
-            # 捕获 Ctrl-C 信号，关闭会话
+            # Capture Ctrl-C signal to close the session
             session.close()
 
             print("\n")
             print("============================")
-            print("程序正在退出......")
+            print("The RKLLM Server is stopping......")
             print("============================")
             break

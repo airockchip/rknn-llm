@@ -18,18 +18,21 @@
   - RK3576 Series
 
 # Support Models
-  - [X] [TinyLLAMA 1.1B](https://huggingface.co/TinyLlama/TinyLlama-1.1B-Chat-v1.0/tree/fe8a4ea1ffedaf415f4da2f062534de366a451e6) 
-  - [X] [Qwen 1.8B](https://huggingface.co/Qwen/Qwen-1_8B-Chat/tree/1d0f68de57b88cfde81f3c3e537f24464d889081)
-  - [X] [Qwen2 0.5B](https://huggingface.co/Qwen/Qwen1.5-0.5B/tree/8f445e3628f3500ee69f24e1303c9f10f5342a39)
-  - [X] [Phi-2 2.7B](https://hf-mirror.com/microsoft/phi-2/tree/834565c23f9b28b96ccbeabe614dd906b6db551a)
-  - [X] [Phi-3 3.8B](https://huggingface.co/microsoft/Phi-3-mini-4k-instruct/tree/291e9e30e38030c23497afa30f3af1f104837aa6)
-  - [X] [ChatGLM3 6B](https://huggingface.co/THUDM/chatglm3-6b/tree/103caa40027ebfd8450289ca2f278eac4ff26405)
-  - [X] [Gemma 2B](https://huggingface.co/google/gemma-2b-it/tree/de144fb2268dee1066f515465df532c05e699d48)
-  - [X] [InternLM2 1.8B](https://huggingface.co/internlm/internlm2-chat-1_8b/tree/ecccbb5c87079ad84e5788baa55dd6e21a9c614d)
-  - [X] [MiniCPM 2B](https://huggingface.co/openbmb/MiniCPM-2B-sft-bf16/tree/79fbb1db171e6d8bf77cdb0a94076a43003abd9e)
+  - [X] [LLAMA models](https://huggingface.co/meta-llama) 
+  - [X] [TinyLLAMA models](https://huggingface.co/TinyLlama) 
+  - [X] [Qwen models](https://huggingface.co/models?search=Qwen/Qwen)
+  - [X] [Phi models](https://huggingface.co/models?search=microsoft/phi)
+  - [X] [ChatGLM3-6B](https://huggingface.co/THUDM/chatglm3-6b/tree/103caa40027ebfd8450289ca2f278eac4ff26405)
+  - [X] [Gemma models](https://huggingface.co/collections/google/gemma-2-release-667d6600fd5220e7b967f315)
+  - [X] [InternLM2 models](https://huggingface.co/collections/internlm/internlm2-65b0ce04970888799707893c)
+  - [X] [MiniCPM models](https://huggingface.co/collections/openbmb/minicpm-65d48bf958302b9fd25b698f)
 
 # Download
-- You can also download all packages, docker image, examples, docs and platform-tools from [RKLLM_SDK](https://console.zbox.filez.com/l/RJJDmB), fetch code: rkllm
+You can download the latest package, docker image, example, documentation, and platform-tool from [RKLLM_SDK](https://console.zbox.filez.com/l/RJJDmB), fetch code: rkllm
+
+# Note
+
+The modifications in version 1.1.0 are significant, making it incompatible with older version models. Please use the latest toolchain for model conversion and inference.
 
 # RKNN Toolkit2
 If you want to deploy additional AI model, we have introduced a SDK called RKNN-Toolkit2. For details, please refer to:
@@ -37,15 +40,17 @@ If you want to deploy additional AI model, we have introduced a SDK called RKNN-
 https://github.com/airockchip/rknn-toolkit2
 
 # CHANGELOG
-## v1.0.1
- - Optimize model conversion memory occupation
- - Optimize inference memory occupation
- - Increase prefill speed
- - Reduce initialization time
- - Improve quantization accuracy
- - Add support for Gemma, ChatGLM3, MiniCPM, InternLM2, and Phi-3
- - Add Server invocation
- - Add inference interruption interface
- - Add logprob and token_id to the return value
+## v1.1.0
+- Support group-wise quantization (w4a16 group sizes of 32/64/128, w8a8 group sizes of 128/256/512).
+- Support joint inference with LoRA model loading
+- Support storage and preloading of prompt cache.
+- Support gguf model conversion (currently only support q4_0 and fp16).
+- Optimize initialization, prefill, and decode time.
+- Support four input types: prompt, embedding, token, and multimodal.
+- Add PC-based simulation accuracy testing and inference interface support for rkllm-toolkit.
+- Add gdq algorithm to improve 4-bit quantization accuracy.
+- Add mixed quantization algorithm, supporting a combination of grouped and non-grouped quantization based on specified ratios.
+- Add support for models such as Llama3, Gemma2, and MiniCPM3.
+- Resolve catastrophic forgetting issue when the number of tokens exceeds max_context.
 
 for older version, please refer [CHANGELOG](CHANGELOG.md)
