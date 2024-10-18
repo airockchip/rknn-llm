@@ -1,1 +1,2 @@
-1e69c83aa9b718a5b75e368aa51d0ac4 rkllm_toolkit-1.1.0-cp38-cp38-linux_x86_64.whl
+696070d1ec134ff68fd5b03b873cd678  rkllm_toolkit-1.1.1-cp38-cp38-linux_x86_64.whl
+e8e37c6bf0af799f9a0187c9864b2450  rkllm_toolkit-1.1.1-cp310-cp310-linux_x86_64.whl

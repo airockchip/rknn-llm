@@ -3,8 +3,8 @@
 #*****************************************************************************************#
 # This script is an automated setup script for the RKLLM-Server-Flask service.
 # Users can run this script to automate the deployment of the RKLLM-Server-Flask service on a Linux board.
-# Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] --npu_num [NPU Core Count] [--lora_model_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]
-# example: ./build_rkllm_server_flask.sh --workshop /user/data --model_path /user/data/model.rkllm --platform rk3588 --npu_num 3
+# Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_model_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]
+# example: ./build_rkllm_server_flask.sh --workshop /user/data --model_path /user/data/model.rkllm --platform rk3588
 #*****************************************************************************************#
 
 LORA_PATH=""
@@ -12,7 +12,7 @@ PROMPT_FILE_PATH=""
 
 # Function to display help
 function show_help {
-    echo "Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] --npu_num [NPU Core Count] [--lora_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]"
+    echo "Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]"
 }
 
 # Parse command-line options
@@ -28,10 +28,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --platform)
             TARGET_PLATFORM="$2"
-            shift 2
-            ;;
-        --npu_num)
-            NPU_CORE_COUNT="$2"
             shift 2
             ;;
         --lora_model_path)
@@ -93,7 +89,7 @@ cp ../../runtime/Linux/librkllm_api/aarch64/librkllmrt.so  ./rkllm_server/lib/
 adb push ./rkllm_server $WORKING_PATH
 
 #################### Enter the board terminal and start the server service. ####################
-CMD="python3 flask_server.py --rkllm_model_path $MODEL_PATH --target_platform $TARGET_PLATFORM --num_npu_core $NPU_CORE_COUNT"
+CMD="python3 flask_server.py --rkllm_model_path $MODEL_PATH --target_platform $TARGET_PLATFORM"
 if [[ -n "$LORA_PATH" ]]; then
     CMD="$CMD --lora_model_path $LORA_PATH"
 fi

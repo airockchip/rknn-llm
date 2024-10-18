@@ -24,9 +24,10 @@ userdata = ctypes.c_void_p(None)
 
 LLMCallState = ctypes.c_int
 LLMCallState.RKLLM_RUN_NORMAL  = 0
-LLMCallState.RKLLM_RUN_FINISH  = 1
-LLMCallState.RKLLM_RUN_ERROR   = 2
-LLMCallState.RKLLM_RUN_GET_LAST_HIDDEN_LAYER = 3
+LLMCallState.RKLLM_RUN_WAITING  = 1
+LLMCallState.RKLLM_RUN_FINISH  = 2
+LLMCallState.RKLLM_RUN_ERROR   = 3
+LLMCallState.RKLLM_RUN_GET_LAST_HIDDEN_LAYER = 4
 
 RKLLMInputMode = ctypes.c_int
 RKLLMInputMode.RKLLM_INPUT_PROMPT      = 0
@@ -38,15 +39,17 @@ RKLLMInferMode = ctypes.c_int
 RKLLMInferMode.RKLLM_INFER_GENERATE = 0
 RKLLMInferMode.RKLLM_INFER_GET_LAST_HIDDEN_LAYER = 1
 
+class RKLLMExtendParam(ctypes.Structure):
+    _fields_ = [
+        ("base_domain_id", ctypes.c_int32),
+        ("reserved", ctypes.c_uint8 * 112)
+    ]
+
 class RKLLMParam(ctypes.Structure):
     _fields_ = [
         ("model_path", ctypes.c_char_p),
-        ("license_path", ctypes.c_char_p),
-        ("num_npu_core", ctypes.c_int32),
         ("max_context_len", ctypes.c_int32),
-        ("n_prefill_batch", ctypes.c_int32),
         ("max_new_tokens", ctypes.c_int32),
-        ("skip_special_token", ctypes.c_bool),
         ("top_k", ctypes.c_int32),
         ("top_p", ctypes.c_float),
         ("temperature", ctypes.c_float),
@@ -56,12 +59,12 @@ class RKLLMParam(ctypes.Structure):
         ("mirostat", ctypes.c_int32),
         ("mirostat_tau", ctypes.c_float),
         ("mirostat_eta", ctypes.c_float),
-        ("logprobs", ctypes.c_bool),
-        ("top_logprobs", ctypes.c_int32),
+        ("skip_special_token", ctypes.c_bool),
         ("is_async", ctypes.c_bool),
         ("img_start", ctypes.c_char_p),
         ("img_end", ctypes.c_char_p),
         ("img_content", ctypes.c_char_p),
+        ("extend_param", RKLLMExtendParam),
     ]
 
 class RKLLMLoraAdapter(ctypes.Structure):
@@ -69,17 +72,6 @@ class RKLLMLoraAdapter(ctypes.Structure):
         ("lora_adapter_path", ctypes.c_char_p),
         ("lora_adapter_name", ctypes.c_char_p),
         ("scale", ctypes.c_float)
-    ]
-
-class RKLLMLoraParam(ctypes.Structure):
-    _fields_ = [
-        ("lora_adapter_name", ctypes.c_char_p)
-    ]
-
-class RKLLMPromptCacheParam(ctypes.Structure):
-    _fields_ = [
-        ("save_prompt_cache", ctypes.c_int),
-        ("prompt_cache_path", ctypes.c_char_p)
     ]
 
 class RKLLMEmbedInput(ctypes.Structure):
@@ -114,6 +106,18 @@ class RKLLMInput(ctypes.Structure):
         ("input_mode", ctypes.c_int),
         ("input_data", RKLLMInputUnion)
     ]
+
+class RKLLMLoraParam(ctypes.Structure):
+    _fields_ = [
+        ("lora_adapter_name", ctypes.c_char_p)
+    ]
+
+class RKLLMPromptCacheParam(ctypes.Structure):
+    _fields_ = [
+        ("save_prompt_cache", ctypes.c_int),
+        ("prompt_cache_path", ctypes.c_char_p)
+    ]
+
 class RKLLMInferParam(ctypes.Structure):
     _fields_ = [
         ("mode", RKLLMInferMode),
@@ -193,14 +197,11 @@ callback = callback_type(callback_impl)
 
 # Define the RKLLM class, which includes initialization, inference, and release operations for the RKLLM model in the dynamic library
 class RKLLM(object):
-    def __init__(self, model_path, num_npu_core, lora_model_path = None, prompt_cache_path = None):
+    def __init__(self, model_path, lora_model_path = None, prompt_cache_path = None):
         rkllm_param = RKLLMParam()
         rkllm_param.model_path = bytes(model_path, 'utf-8')
-        rkllm_param.license_path = None
-        rkllm_param.num_npu_core = num_npu_core
 
         rkllm_param.max_context_len = 512
-        rkllm_param.n_prefill_batch = 512
         rkllm_param.max_new_tokens = -1
         rkllm_param.skip_special_token = True
 
@@ -215,20 +216,20 @@ class RKLLM(object):
         rkllm_param.mirostat_tau = 5.0
         rkllm_param.mirostat_eta = 0.1
 
-        rkllm_param.logprobs = False
-        rkllm_param.top_logprobs = 5
         rkllm_param.is_async = False
 
         rkllm_param.img_start = "".encode('utf-8')
         rkllm_param.img_end = "".encode('utf-8')
         rkllm_param.img_content = "".encode('utf-8')
+
+        rkllm_param.extend_param.base_domain_id = 0
         
         self.handle = RKLLM_Handle_t()
 
         self.rkllm_init = rkllm_lib.rkllm_init
-        self.rkllm_init.argtypes = [ctypes.POINTER(RKLLM_Handle_t), RKLLMParam, callback_type]
+        self.rkllm_init.argtypes = [ctypes.POINTER(RKLLM_Handle_t), ctypes.POINTER(RKLLMParam), callback_type]
         self.rkllm_init.restype = ctypes.c_int
-        self.rkllm_init(ctypes.byref(self.handle), rkllm_param, callback)
+        self.rkllm_init(ctypes.byref(self.handle), ctypes.byref(rkllm_param), callback)
 
         self.rkllm_run = rkllm_lib.rkllm_run
         self.rkllm_run.argtypes = [RKLLM_Handle_t, ctypes.POINTER(RKLLMInput), ctypes.POINTER(RKLLMInferParam), ctypes.c_void_p]
@@ -288,7 +289,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--rkllm_model_path', type=str, required=True, help='Absolute path of the converted RKLLM model on the Linux board;')
     parser.add_argument('--target_platform', type=str, required=True, help='Target platform: e.g., rk3588/rk3576;')
-    parser.add_argument('--num_npu_core', type=int, required=True, help='Target num_npu_core;')
     parser.add_argument('--lora_model_path', type=str, help='Absolute path of the lora_model on the Linux board;')
     parser.add_argument('--prompt_cache_path', type=str, help='Absolute path of the prompt_cache file on the Linux board;')
     args = parser.parse_args()
@@ -300,11 +300,6 @@ if __name__ == "__main__":
 
     if not (args.target_platform in ["rk3588", "rk3576"]):
         print("Error: Please specify the correct target platform: rk3588/rk3576.")
-        sys.stdout.flush()
-        exit()
-
-    if not (args.num_npu_core in [1, 2, 3]):
-        print("Error: rk3576 supports 1/2 cores, rk3588 supports 1/2/3 cores, please specify the correct number of cores.")
         sys.stdout.flush()
         exit()
 
@@ -331,8 +326,7 @@ if __name__ == "__main__":
     print("=========init....===========")
     sys.stdout.flush()
     model_path = args.rkllm_model_path
-    num_npu_core = args.num_npu_core
-    rkllm_model = RKLLM(model_path, num_npu_core, args.lora_model_path, args.prompt_cache_path)
+    rkllm_model = RKLLM(model_path, args.lora_model_path, args.prompt_cache_path)
     print("RKLLM Model has been initialized successfully！")
     print("==============================")
     sys.stdout.flush()
