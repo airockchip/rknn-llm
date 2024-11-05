@@ -84,7 +84,7 @@ You can download the latest package, docker image, example, documentation, and p
   
   - Python 3.10
 
-- Latest version: [ <u>v1.1.1](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.1)</u>
+- Latest version: [ <u>v1.1.2](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.2)</u>
 
 # RKNN Toolkit2
 
