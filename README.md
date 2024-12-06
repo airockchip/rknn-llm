@@ -29,6 +29,7 @@
 - [x] [Gemma models](https://huggingface.co/collections/google/gemma-2-release-667d6600fd5220e7b967f315)
 - [x] [InternLM2 models](https://huggingface.co/collections/internlm/internlm2-65b0ce04970888799707893c)
 - [x] [MiniCPM models](https://huggingface.co/collections/openbmb/minicpm-65d48bf958302b9fd25b698f)
+- [x] [TeleChat models](https://huggingface.co/Tele-AI)
 
 # Model Performance Benchmark
 
@@ -84,7 +85,7 @@ You can download the latest package, docker image, example, documentation, and p
   
   - Python 3.10
 
-- Latest version: [ <u>v1.1.2](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.2)</u>
+- Latest version: [ <u>v1.1.3](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.3)</u>
 
 # RKNN Toolkit2
 
