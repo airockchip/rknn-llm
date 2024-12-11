@@ -30,6 +30,8 @@
 - [x] [InternLM2 models](https://huggingface.co/collections/internlm/internlm2-65b0ce04970888799707893c)
 - [x] [MiniCPM models](https://huggingface.co/collections/openbmb/minicpm-65d48bf958302b9fd25b698f)
 - [x] [TeleChat models](https://huggingface.co/Tele-AI)
+- [x] [Qwen2-VL](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)
+- [x] [MiniCPM-V](https://huggingface.co/openbmb/MiniCPM-V-2_6)
 
 # Model Performance Benchmark
 
@@ -75,6 +77,12 @@
 
 You can download the latest package, docker image, example, documentation, and platform-tool from [RKLLM_SDK](https://console.zbox.filez.com/l/RJJDmB), fetch code: rkllm
 
+# Examples
+
+1. Multimodel deployment demo:   [rkllm_multimodel_demo](https://github.com/airockchip/rknn-llm/tree/main/examples/rkllm_multimodel_demo)
+2. API usage demo:  [rkllm_api_demo](https://github.com/airockchip/rknn-llm/tree/main/examples/rkllm_api_demo)
+3. API server demo:  [rkllm_server_demo](https://github.com/airockchip/rknn-llm/tree/main/examples/rkllm_server_demo)
+
 # Note
 
 - The modifications in version 1.1 are significant, making it incompatible with older version models. Please use the latest toolchain for model conversion and inference.
@@ -85,7 +93,7 @@ You can download the latest package, docker image, example, documentation, and p
   
   - Python 3.10
 
-- Latest version: [ <u>v1.1.3](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.3)</u>
+- Latest version: [ <u>v1.1.4](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.1.4)</u>
 
 # RKNN Toolkit2
 
