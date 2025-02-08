@@ -4,7 +4,7 @@ if [[ -z ${BUILD_TYPE} ]];then
     BUILD_TYPE=Release
 fi
 
-ANDROID_NDK_PATH=~/opts/ndk/android-ndk-r21e
+ANDROID_NDK_PATH=~/opts/android-ndk-r21e
 TARGET_ARCH=arm64-v8a
 
 TARGET_PLATFORM=android
@@ -31,3 +31,4 @@ cmake ../.. \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
 
 make -j4
+make install

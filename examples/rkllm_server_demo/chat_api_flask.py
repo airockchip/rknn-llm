@@ -3,7 +3,7 @@ import requests
 import json
   
 # Set the address of the Server.
-server_url = 'http://172.16.10.79:8080/rkllm_chat'
+server_url = 'http://172.x.x.x:8080/rkllm_chat'
 # Set whether to enable streaming mode.
 is_streaming = True
 

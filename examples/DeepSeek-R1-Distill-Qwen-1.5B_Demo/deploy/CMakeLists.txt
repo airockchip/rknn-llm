@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.10)
+project(rkllm_demo)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+    set (TARGET_LIB_ARCH ${CMAKE_ANDROID_ARCH_ABI})
+else()
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set (TARGET_LIB_ARCH aarch64)
+    else()
+        set (TARGET_LIB_ARCH armhf)
+    endif()
+    if (CMAKE_C_COMPILER MATCHES "uclibc")
+        set (TARGET_LIB_ARCH ${TARGET_LIB_ARCH}_uclibc)
+    endif()
+endif()
+
+set(SOURCE_FILES_1 src/llm_demo.cpp)
+add_executable(llm_demo ${SOURCE_FILES_1})
+
+set(RKLLM_API_PATH "${CMAKE_SOURCE_DIR}/../../../rkllm-runtime/${CMAKE_SYSTEM_NAME}/librkllm_api")
+include_directories(${RKLLM_API_PATH}/include)
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+    set(RKLLM_RT_LIB ${RKLLM_API_PATH}/${CMAKE_ANDROID_ARCH_ABI}/librkllmrt.so)
+    find_package(OpenMP REQUIRED)
+    target_link_libraries(llm_demo  ${RKLLM_RT_LIB} log OpenMP::OpenMP_CXX)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(RKLLM_RT_LIB ${RKLLM_API_PATH}/aarch64/librkllmrt.so)
+    target_link_libraries(llm_demo  ${RKLLM_RT_LIB})
+endif()
+
+# Install the executable file to the specified directory
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/install/demo_${CMAKE_SYSTEM_NAME}_${TARGET_LIB_ARCH})
+install(TARGETS llm_demo DESTINATION ./)
+install(PROGRAMS ${RKLLM_RT_LIB} DESTINATION lib)

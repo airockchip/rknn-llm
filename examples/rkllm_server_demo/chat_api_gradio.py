@@ -3,7 +3,7 @@ from gradio_client import Client
 # This function interacts with the RKLLM model by calling the Gradio Client API.
 def chat_with_rkllm(user_message, history=[]):
     # Instantiate the Gradio Client. Users need to modify according to their specific deployment URL.
-    client = Client("http://172.16.10.79:8080")
+    client = Client("http://172.x.x.x:8080")
 
     # Call the Gradio Client API for interaction. The internal APIs mainly include:
     # get_user_input: The model retrieves user input and adds it to the history record 'history'.

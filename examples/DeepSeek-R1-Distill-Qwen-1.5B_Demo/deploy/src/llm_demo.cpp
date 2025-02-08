@@ -21,9 +21,8 @@
 #include <csignal>
 #include <vector>
 
-#define PROMPT_TEXT_PREFIX "<|im_start|>system You are a helpful assistant. <|im_end|> <|im_start|>user"
-#define PROMPT_TEXT_POSTFIX "<|im_end|><|im_start|>assistant"
-
+#define PROMPT_TEXT_PREFIX "<｜begin▁of▁sentence｜><｜User｜>"
+#define PROMPT_TEXT_POSTFIX "<｜Assistant｜>"
 
 using namespace std;
 LLMHandle llmHandle = nullptr;
@@ -108,11 +107,8 @@ int main(int argc, char **argv)
     }
 
     vector<string> pre_input;
-    pre_input.push_back("把下面的现代文翻译成文言文: 到了春风和煦，阳光明媚的时候，湖面平静，没有惊涛骇浪，天色湖光相连，一片碧绿，广阔无际；沙洲上的鸥鸟，时而飞翔，时而停歇，美丽的鱼游来游去，岸上与小洲上的花草，青翠欲滴。");
-    pre_input.push_back("以咏梅为题目，帮我写一首古诗，要求包含梅花、白雪等元素。");
-    pre_input.push_back("上联: 江边惯看千帆过");
-    pre_input.push_back("把这句话翻译成中文: Knowledge can be acquired from many sources. These include books, teachers and practical experience, and each has its own advantages. The knowledge we gain from books and formal education enables us to learn about things that we have no opportunity to experience in daily life. We can also develop our analytical skills and learn how to view and interpret the world around us in different ways. Furthermore, we can learn from the past by reading books. In this way, we won't repeat the mistakes of others and can build on their achievements.");
-    pre_input.push_back("把这句话翻译成英文: RK3588是新一代高端处理器，具有高算力、低功耗、超强多媒体、丰富数据接口等特点");
+    pre_input.push_back("现有一笼子，里面有鸡和兔子若干只，数一数，共有头14个，腿38条，求鸡和兔子各有多少只？");
+    pre_input.push_back("有28位小朋友排成一行,从左边开始数第10位是学豆,从右边开始数他是第几位?");
     cout << "\n**********************可输入以下问题对应序号获取回答/或自定义输入********************\n"
          << endl;
     for (int i = 0; i < (int)pre_input.size(); i++)
@@ -181,8 +177,8 @@ int main(int argc, char **argv)
                 cout << input_str << endl;
             }
         }
-        // text = PROMPT_TEXT_PREFIX + input_str + PROMPT_TEXT_POSTFIX;
-        text = input_str;
+        text = PROMPT_TEXT_PREFIX + input_str + PROMPT_TEXT_POSTFIX;
+        // text = input_str;
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
         rkllm_input.prompt_input = (char *)text.c_str();
         printf("robot: ");
