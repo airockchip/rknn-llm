@@ -1,3 +1,8 @@
+# Usage:
+#   1. Download your `your-model.rkllm` model to the `./models/` directory
+#   2. Start the chat-api with:
+#     RKLLM_MODEL_FILE="your-model.rkllm" docker compose run --rm -it chat-api
+
 services:
   rkllm-server:
     build:
@@ -14,10 +19,37 @@ services:
     ports:
       - ${RKLLM_SERVER_PORT:-8080}:8080
     volumes:
-      - ./models:/app/models:ro # *.rkllm models
-      - /sys:/sys:rw # for fix_freq_*.sh scripts
+      - ./models:/app/models:ro   # *.rkllm models
+      - /sys:/sys:rw              # for fix_freq_*.sh scripts
     devices:
       - /dev/dri:/dev/dri
     security_opt:
       - systempaths=unconfined
     restart: "no"
+
+  chat-api:
+    build:
+      dockerfile_inline: |
+        FROM python:3.12-slim
+
+        RUN [ "${RKLLM_SERVER_INTERFACE:-gradio}" = "gradio" ] \
+            && pip install "gradio>=4.24.0"
+    volumes:
+      - ./:/usr/local/src/app/:ro
+    working_dir: /app
+    command:
+      - "bash"
+      - "-c"
+      - >-
+          >/app/chat_api.py sed "s,172.x.x.x:8080,server:8080,g"
+          "/usr/local/src/app/chat_api_${RKLLM_SERVER_INTERFACE:-gradio}.py"
+          && python3 -m chat_api
+    links:
+      - "rkllm-server:server"
+    ports:
+      - ${RKLLM_CLIENT_PORT:-8888}:8080
+    depends_on:
+      - rkllm-server  # Ensure the server starts first
+    stdin_open: true  # Keep STDIN open for interactive use
+    tty: true         # Allocate a TTY for the client
+
