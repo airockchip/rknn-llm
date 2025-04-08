@@ -24,9 +24,6 @@
 #include "image_enc.h"
 #include "rkllm.h"
 
-#define PROMPT_TEXT_PREFIX "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n"
-#define PROMPT_TEXT_POSTFIX "<|im_end|>\n<|im_start|>assistant\n"
-
 using namespace std;
 LLMHandle llmHandle = nullptr;
 
@@ -110,7 +107,7 @@ int main(int argc, char** argv)
     param.img_start = "<|vision_start|>";
     param.img_end = "<|vision_end|>";
     param.img_content = "<|image_pad|>";
-
+    param.extend_param.base_domain_id = 1;
     int ret;
 
     std::chrono::high_resolution_clock::time_point t_start_us = std::chrono::high_resolution_clock::now();
@@ -151,7 +148,7 @@ int main(int argc, char** argv)
     cv::Scalar background_color(127.5, 127.5, 127.5);
     cv::Mat square_img = expand2square(img, background_color);
 
-    // Resize the image to 448x448
+    // Resize the image to 392x392
     cv::Mat resized_img;
     cv::Size new_size(392, 392);
     cv::resize(square_img, resized_img, new_size, 0, 0, cv::INTER_LINEAR);
@@ -165,13 +162,28 @@ int main(int argc, char** argv)
         printf("run_imgenc fail! ret=%d\n", ret);
     }
     
-    string text;
     RKLLMInput rkllm_input;
 
     // 初始化 infer 参数结构体
     RKLLMInferParam rkllm_infer_params;
     memset(&rkllm_infer_params, 0, sizeof(RKLLMInferParam));
     rkllm_infer_params.mode = RKLLM_INFER_GENERATE;
+    
+    rkllm_infer_params.keep_history = 0;
+    rkllm_set_chat_template(llmHandle, "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n", "<|im_start|>user\n", "<|im_end|>\n<|im_start|>assistant\n");
+
+
+    vector<string> pre_input;
+    pre_input.push_back("<image>What is in the image?");
+    pre_input.push_back("<image>这张图片中有什么？");
+    cout << "\n**********************可输入以下问题对应序号获取回答/或自定义输入********************\n"
+         << endl;
+    for (int i = 0; i < (int)pre_input.size(); i++)
+    {
+        cout << "[" << i << "] " << pre_input[i] << endl;
+    }
+    cout << "\n*************************************************************************\n"
+         << endl;
 
     while(true) {
         std::string input_str;
@@ -182,11 +194,33 @@ int main(int argc, char** argv)
         {
             break;
         }
-        text = PROMPT_TEXT_PREFIX + input_str + PROMPT_TEXT_POSTFIX;
-        rkllm_input.input_type = RKLLM_INPUT_MULTIMODAL;
-        rkllm_input.multimodal_input.prompt = (char*)text.c_str();
-        rkllm_input.multimodal_input.image_embed = img_vec;
-        rkllm_input.multimodal_input.n_image_tokens = n_image_tokens;
+        if (input_str == "clear")
+        {
+            ret = rkllm_clear_kv_cache(llmHandle, 1);
+            if (ret != 0)
+            {
+                printf("clear kv cache failed!\n");
+            }
+            continue;
+        }
+        for (int i = 0; i < (int)pre_input.size(); i++)
+        {
+            if (input_str == to_string(i))
+            {
+                input_str = pre_input[i];
+                cout << input_str << endl;
+            }
+        }
+        if (input_str.find("<image>") == std::string::npos) 
+        {
+            rkllm_input.input_type = RKLLM_INPUT_PROMPT;
+            rkllm_input.prompt_input = (char*)input_str.c_str();
+        } else {
+            rkllm_input.input_type = RKLLM_INPUT_MULTIMODAL;
+            rkllm_input.multimodal_input.prompt = (char*)input_str.c_str();
+            rkllm_input.multimodal_input.image_embed = img_vec;
+            rkllm_input.multimodal_input.n_image_tokens = n_image_tokens;
+        }
         printf("robot: ");
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);
     }

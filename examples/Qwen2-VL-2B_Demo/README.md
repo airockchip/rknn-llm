@@ -4,7 +4,7 @@
 
 ## 1. Requirements
 ```
-rkllm-toolkit==1.1.4
+rkllm-toolkit==1.2.0
 rknn-toolkit2==2.2.1
 python==3.8
 ```

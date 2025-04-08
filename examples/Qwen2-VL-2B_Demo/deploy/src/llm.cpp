@@ -23,9 +23,6 @@
 
 #include "rkllm.h"
 
-#define PROMPT_TEXT_PREFIX "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\n"
-#define PROMPT_TEXT_POSTFIX "<|im_end|>\n<|im_start|>assistant\n"
-
 using namespace std;
 LLMHandle llmHandle = nullptr;
 
@@ -81,6 +78,7 @@ int main(int argc, char **argv)
     param.max_new_tokens = std::atoi(argv[2]);
     param.max_context_len = std::atoi(argv[3]);
     param.skip_special_token = true;
+    param.extend_param.base_domain_id = 0;
 
     std::chrono::high_resolution_clock::time_point t_start_us = std::chrono::high_resolution_clock::now();
 
@@ -111,13 +109,15 @@ int main(int argc, char **argv)
     cout << "\n*************************************************************************\n"
          << endl;
 
-    string text;
     RKLLMInput rkllm_input;
 
     // 初始化 infer 参数结构体
     RKLLMInferParam rkllm_infer_params;
     memset(&rkllm_infer_params, 0, sizeof(RKLLMInferParam));
     rkllm_infer_params.mode = RKLLM_INFER_GENERATE;
+
+    rkllm_infer_params.keep_history = 0;
+    rkllm_set_chat_template(llmHandle, "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n", "<|im_start|>user\n", "<|im_end|>\n<|im_start|>assistant\n");
 
     while (true)
     {
@@ -137,8 +137,7 @@ int main(int argc, char **argv)
                 cout << input_str << endl;
             }
         }
-        text = PROMPT_TEXT_PREFIX + input_str + PROMPT_TEXT_POSTFIX;
-        rkllm_input.prompt_input = (char*)text.c_str();
+        rkllm_input.prompt_input = (char*)input_str.c_str();
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
         printf("robot: ");
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);

@@ -53,6 +53,9 @@ done
 #################### Check if pip and the Flask library are already installed on the board. ####################
 adb shell << EOF
 
+pkill -f "python3 flask_server.py"
+pkill -f "python3 gradio_server.py"
+
 if ! command -v pip3 &> /dev/null; then
     echo "-------- pip3 is not installed. Installing it now... --------"
     sudo apt update

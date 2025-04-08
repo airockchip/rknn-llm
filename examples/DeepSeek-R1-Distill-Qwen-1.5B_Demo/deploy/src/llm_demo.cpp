@@ -21,8 +21,6 @@
 #include <csignal>
 #include <vector>
 
-#define PROMPT_TEXT_PREFIX "<｜begin▁of▁sentence｜><｜User｜>"
-#define PROMPT_TEXT_POSTFIX "<｜Assistant｜>"
 
 using namespace std;
 LLMHandle llmHandle = nullptr;
@@ -48,7 +46,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         printf("\n");
     } else if (state == RKLLM_RUN_ERROR) {
         printf("\\run error\n");
-    } else if (state == RKLLM_RUN_GET_LAST_HIDDEN_LAYER) {
+    } else if (state == RKLLM_RUN_NORMAL) {
         /* ================================================================================================================
         若使用GET_LAST_HIDDEN_LAYER功能,callback接口会回传内存指针:last_hidden_layer,token数量:num_tokens与隐藏层大小:embd_size
         通过这三个参数可以取得last_hidden_layer中的数据
@@ -66,7 +64,6 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
                 std::cerr << "Failed to open the file for writing!" << std::endl;
             }
         }
-    } else if (state == RKLLM_RUN_NORMAL) {
         printf("%s", result->text);
     }
 }
@@ -97,6 +94,7 @@ int main(int argc, char **argv)
     param.max_context_len = std::atoi(argv[3]);
     param.skip_special_token = true;
     param.extend_param.base_domain_id = 0;
+    param.extend_param.embed_flash = 1;
 
     int ret = rkllm_init(&llmHandle, &param, callback);
     if (ret == 0){
@@ -118,7 +116,6 @@ int main(int argc, char **argv)
     cout << "\n*************************************************************************\n"
          << endl;
 
-    string text;
     RKLLMInput rkllm_input;
 
     // 初始化 infer 参数结构体
@@ -158,7 +155,15 @@ int main(int argc, char **argv)
     // rkllm_load_prompt_cache(llmHandle, "./prompt_cache.bin"); // 加载缓存的cache
 
     rkllm_infer_params.mode = RKLLM_INFER_GENERATE;
+    // By default, the chat operates in single-turn mode (no context retention)
+    // 0 means no history is retained, each query is independent
+    rkllm_infer_params.keep_history = 0;
 
+    //The model has a built-in chat template by default, which defines how prompts are formatted  
+    //for conversation. Users can modify this template using this function to customize the  
+    //system prompt, prefix, and postfix according to their needs.  
+    rkllm_set_chat_template(llmHandle, "", "<｜User｜>", "<｜Assistant｜>");
+    
     while (true)
     {
         std::string input_str;
@@ -169,6 +174,15 @@ int main(int argc, char **argv)
         {
             break;
         }
+        if (input_str == "clear")
+        {
+            ret = rkllm_clear_kv_cache(llmHandle, 1);
+            if (ret != 0)
+            {
+                printf("clear kv cache failed!\n");
+            }
+            continue;
+        }
         for (int i = 0; i < (int)pre_input.size(); i++)
         {
             if (input_str == to_string(i))
@@ -177,10 +191,8 @@ int main(int argc, char **argv)
                 cout << input_str << endl;
             }
         }
-        text = PROMPT_TEXT_PREFIX + input_str + PROMPT_TEXT_POSTFIX;
-        // text = input_str;
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
-        rkllm_input.prompt_input = (char *)text.c_str();
+        rkllm_input.prompt_input = (char *)input_str.c_str();
         printf("robot: ");
 
         // 若要使用普通推理功能,则配置rkllm_infer_mode为RKLLM_INFER_GENERATE或不配置参数

@@ -1,0 +1,21 @@
+{
+    "BLOCKNAME": "InternLM2DecoderLayer",
+    "TOKEN_EMBD": "tok_embeddings",
+    "ATTN_NORM": "attention_norm",
+    "ATTN_Q": "",
+    "ATTN_K": "",
+    "ATTN_V": "",
+    "ATTN_QKV": "wqkv",
+    "ATTN_KV": "",
+    "KV_CONTINUOUS": "false",
+    "ATTN_OUT": "wo",
+    "ATTN_POST_NORM": "",
+    "FFN_NORM": "ffn_norm",
+    "FFN_UP": "w3",
+    "FFN_GATE": "w1",
+    "ACT_TYPE": "silu",
+    "FFN_DOWN": "w2",
+    "FFN_POST_NORM": "",
+    "OUTPUT_NORM": "norm",
+    "OUTPUT": "output"
+}

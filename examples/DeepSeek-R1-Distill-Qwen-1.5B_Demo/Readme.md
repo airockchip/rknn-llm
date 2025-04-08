@@ -5,9 +5,9 @@
 ## 1. Requirements
 
 ```
-rkllm-toolkit==1.1.4
-rkllm-runtime==1.1.4
-python==3.8 or python==3.10
+rkllm-toolkit==1.2.0
+rkllm-runtime==1.2.0
+python >=3.8
 ```
 
 ## 2. Model Conversion
@@ -40,6 +40,8 @@ cd deploy
 adb push install/demo_Linux_aarch64 /data
 # push model file to device
 adb push DeepSeek-R1-Distill-Qwen-1.5B.rkllm /data/demo_Linux_aarch64
+# push the appropriate fixed-frequency script to the device
+adb push ../../../scripts/fix_freq_rk3588.sh /data/demo_Linux_aarch64
 ```
 
 ### 2. Run Demo
@@ -51,7 +53,11 @@ adb shell
 cd /data/demo_Linux_aarch64
 # export lib path
 export LD_LIBRARY_PATH=./lib
-taskset f0 ./llm_demo /path/to/your/rkllm/model 2048 4096
+# Execute the fixed-frequency script
+sh fix_freq_rk3588.sh
+# Set the logging level for performance analysis
+export RKLLM_LOG_LEVEL=1
+./llm_demo /path/to/your/rkllm/model 2048 4096
 
 # Running result                                                          
 rkllm init start

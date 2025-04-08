@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+#define CPU0 (1 << 0)  // 0x01
+#define CPU1 (1 << 1)  // 0x02
+#define CPU2 (1 << 2)  // 0x04
+#define CPU3 (1 << 3)  // 0x08
+#define CPU4 (1 << 4)  // 0x10
+#define CPU5 (1 << 5)  // 0x20
+#define CPU6 (1 << 6)  // 0x40
+#define CPU7 (1 << 7)  // 0x80
+
 /**
  * @typedef LLMHandle
  * @brief A handle used to manage and interact with the large language model.
@@ -20,7 +29,6 @@ typedef enum {
     RKLLM_RUN_WAITING = 1, /**< The LLM call is waiting for complete UTF-8 encoded character. */
     RKLLM_RUN_FINISH  = 2, /**< The LLM call has finished execution. */
     RKLLM_RUN_ERROR   = 3, /**< An error occurred during the LLM call. */
-    RKLLM_RUN_GET_LAST_HIDDEN_LAYER = 4 /**< Retrieve the last hidden layer during inference. */
 } LLMCallState;
 
 /**
@@ -41,6 +49,7 @@ typedef enum {
 typedef enum {
     RKLLM_INFER_GENERATE                    = 0, /**< The LLM generates text based on input. */
     RKLLM_INFER_GET_LAST_HIDDEN_LAYER       = 1, /**< The LLM retrieves the last hidden layer for further processing. */
+    RKLLM_INFER_GET_LOGITS                  = 2, /**< The LLM retrieves logits for further processing. */
 } RKLLMInferMode;
 
 /**
@@ -48,8 +57,11 @@ typedef enum {
  * @brief The extend parameters for configuring an LLM instance.
  */
 typedef struct {
-    int32_t      base_domain_id;   /**< base_domain_id */
-    uint8_t      reserved[112];    /**< reserved */
+    int32_t      base_domain_id;        /**< base_domain_id */
+    int8_t       embed_flash;           /**< Indicates whether to query word embedding vectors from flash memory (1) or not (0). */
+    int8_t       enabled_cpus_num;      /**< Number of CPUs enabled for inference. */
+    uint32_t     enabled_cpus_mask;     /**< Bitmask indicating which CPUs to enable for inference. */
+    uint8_t      reserved[106];         /**< reserved */
 } RKLLMExtendParam;
 
 /**
@@ -61,6 +73,7 @@ typedef struct {
     int32_t max_context_len;        /**< Maximum number of tokens in the context window. */
     int32_t max_new_tokens;         /**< Maximum number of new tokens to generate. */
     int32_t top_k;                  /**< Top-K sampling parameter for token generation. */
+    int32_t n_keep;                 /** number of kv cache to keep at the beginning when shifting context window */
     float top_p;                    /**< Top-P (nucleus) sampling parameter. */
     float temperature;              /**< Sampling temperature, affecting the randomness of token selection. */
     float repeat_penalty;           /**< Penalty for repeating tokens in generation. */
@@ -151,9 +164,10 @@ typedef struct {
  * @brief Structure for defining parameters during inference.
  */
 typedef struct {
-    RKLLMInferMode mode;                    /**< Inference mode (e.g., generate or get last hidden layer). */
-    RKLLMLoraParam* lora_params;            /**< Pointer to Lora adapter parameters. */
+    RKLLMInferMode mode;                        /**< Inference mode (e.g., generate or get last hidden layer). */
+    RKLLMLoraParam* lora_params;                /**< Pointer to Lora adapter parameters. */
     RKLLMPromptCacheParam* prompt_cache_params; /**< Pointer to prompt cache parameters. */
+    int keep_history;                           /**Flag to determine history retention (1: keep history, 0: discard history).*/
 } RKLLMInferParam;
 
 /**
@@ -167,6 +181,16 @@ typedef struct {
 } RKLLMResultLastHiddenLayer;
 
 /**
+ * @struct RKLLMResultLogits
+ * @brief Structure to hold the logits.
+ */
+typedef struct {
+    const float* logits;        /**< Pointer to the logits (of size num_tokens * vocab_size). */
+    int vocab_size;             /**< Size of the vocab. */
+    int num_tokens;             /**< Number of tokens for which logits are stored. */
+} RKLLMResultLogits;
+
+/**
  * @struct RKLLMResult
  * @brief Structure to represent the result of LLM inference.
  */
@@ -174,6 +198,7 @@ typedef struct {
     const char* text;                        /**< Generated text result. */
     int32_t token_id;                        /**< ID of the generated token. */
     RKLLMResultLastHiddenLayer last_hidden_layer; /**< Hidden states of the last layer (if requested). */
+    RKLLMResultLogits logits; 
 } RKLLMResult;
 
 /**
@@ -263,6 +288,30 @@ int rkllm_abort(LLMHandle handle);
  * @return Status code (0 if a task is running, non-zero for otherwise).
  */
 int rkllm_is_running(LLMHandle handle);
+
+/**  
+ * @brief Clear the key-value cache for a given LLM handle.  
+ * @param handle LLM handle.  
+ * @param keep_system_prompt Flag indicating whether to retain the system prompt in the cache (1 to retain, 0 to clear).  
+ * @return Status code (0 if cache was cleared successfully, non-zero for otherwise).  
+ */  
+int rkllm_clear_kv_cache(LLMHandle handle, int keep_system_prompt);
+
+/**  
+ * @brief Sets the chat template for the LLM, including system prompt, prefix, and postfix.  
+ *  
+ * This function allows you to customize the chat template by providing a system prompt, a prompt prefix, and a prompt postfix.  
+ * The system prompt is typically used to define the behavior or context of the language model,  
+ * while the prefix and postfix are used to format the user input and output respectively.  
+ *  
+ * @param handle LLM handle.  
+ * @param system_prompt The system prompt that defines the context or behavior of the language model.  
+ * @param prompt_prefix The prefix added before the user input in the chat.  
+ * @param prompt_postfix The postfix added after the user input in the chat.  
+ *  
+ * @return Status code (0 if the template was set successfully, non-zero for errors).  
+ */
+int rkllm_set_chat_template(LLMHandle handle, const char* system_prompt, const char* prompt_prefix, const char* prompt_postfix);
 
 #ifdef __cplusplus
 }

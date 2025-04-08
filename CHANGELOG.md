@@ -1,4 +1,20 @@
 # CHANGELOG
+## v1.2.0
+
+- Supports custom model conversion.
+- Supports chat_template configuration.
+- Enables multi-turn dialogue interactions.
+- Implements automatic prompt cache reuse for improved inference efficiency.
+- Expands maximum context length to 16K.
+- Supports embedding flash storage to reduce memory usage.
+- Introduces the GRQ Int4 quantization algorithm.
+- Supports GPTQ-Int8 model conversion.
+- Compatible with the RK3562 platform.
+- Added support for visual multimodal models such as InternVL2, Janus, and Qwen2.5-VL.
+- Supports CPU core configuration.
+- Added support for Gemma3
+- Added support for Python 3.9/3.11/3.12
+
 ## v1.1.0
 - Support group-wise quantization (w4a16 group sizes of 32/64/128, w8a8 group sizes of 128/256/512).
 - Support joint inference with LoRA model loading

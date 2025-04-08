@@ -1,0 +1,21 @@
+{
+    "BLOCKNAME": "QWenBlock",
+    "TOKEN_EMBD": "wte",
+    "ATTN_NORM": "ln_1",
+    "ATTN_Q": "",
+    "ATTN_K": "",
+    "ATTN_V": "",
+    "ATTN_QKV": "attn.c_attn",
+    "ATTN_KV": "",
+    "KV_CONTINUOUS": "true",
+    "ATTN_OUT": "attn.c_proj",
+    "ATTN_POST_NORM": "",
+    "FFN_NORM": "ln_2",
+    "FFN_UP": "mlp.w1",
+    "FFN_GATE": "mlp.w2",
+    "ACT_TYPE": "silu",
+    "FFN_DOWN": "c_proj",
+    "FFN_POST_NORM": "",
+    "OUTPUT_NORM": "ln_f",
+    "OUTPUT": "lm_head"
+}
