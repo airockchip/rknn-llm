@@ -220,6 +220,9 @@ int main(int argc, char** argv)
             rkllm_input.multimodal_input.prompt = (char*)input_str.c_str();
             rkllm_input.multimodal_input.image_embed = img_vec;
             rkllm_input.multimodal_input.n_image_tokens = n_image_tokens;
+            rkllm_input.multimodal_input.n_image = 1;
+            rkllm_input.multimodal_input.image_height = 392;
+            rkllm_input.multimodal_input.image_width = 392;
         }
         printf("robot: ");
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);

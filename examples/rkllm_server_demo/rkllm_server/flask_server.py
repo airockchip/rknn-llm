@@ -89,7 +89,10 @@ class RKLLMMultiModelInput(ctypes.Structure):
     _fields_ = [
         ("prompt", ctypes.c_char_p),
         ("image_embed", ctypes.POINTER(ctypes.c_float)),
-        ("n_image_tokens", ctypes.c_size_t)
+        ("n_image_tokens", ctypes.c_size_t),
+        ("n_image", ctypes.c_size_t),
+        ("image_width", ctypes.c_size_t),
+        ("image_height", ctypes.c_size_t)
     ]
 
 class RKLLMInputUnion(ctypes.Union):

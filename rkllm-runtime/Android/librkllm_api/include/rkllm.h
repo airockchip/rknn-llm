@@ -124,8 +124,11 @@ typedef struct {
  */
 typedef struct {
     char* prompt;           /**< Text prompt input. */
-    float* image_embed;     /**< Embedding of the image (of size n_image_tokens * n_image_embed). */
-    size_t n_image_tokens;  /**< Number of image tokens. */
+    float* image_embed;     /**< Embedding of the images (of size n_image * n_image_tokens * image_embed_length). */
+    size_t n_image_tokens;  /**< Number of image_token. */
+    size_t n_image;         /**< Number of image. */
+    size_t image_width;     /**< Width of image. */
+    size_t image_height;    /**< Height of image. */
 } RKLLMMultiModelInput;
 
 /**
