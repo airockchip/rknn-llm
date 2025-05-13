@@ -24,14 +24,14 @@ endif()
 
 # opencv
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL-2B_Demo/deploy/3rdparty/opencv-linux-aarch64/share/OpenCV)
+  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL_Demo/deploy/3rdparty/opencv-linux-aarch64/share/OpenCV)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
-  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL-2B_Demo/deploy/3rdparty/opencv-mobile-3.4.20-android/sdk/native/jni/abi-${CMAKE_ANDROID_ARCH_ABI})
+  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL_Demo/deploy/3rdparty/opencv-mobile-3.4.20-android/sdk/native/jni/abi-${CMAKE_ANDROID_ARCH_ABI})
 endif()
 find_package(OpenCV REQUIRED)
 
 # rknn runtime
-set(RKNN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL-2B_Demo/deploy/3rdparty/librknnrt)
+set(RKNN_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../Qwen2-VL_Demo/deploy/3rdparty/librknnrt)
 set(LIBRKNNRT ${RKNN_PATH}/${CMAKE_SYSTEM_NAME}/librknn_api/${TARGET_LIB_ARCH}/librknnrt.so)
 set(LIBRKNNRT_INCLUDES ${RKNN_PATH}/${CMAKE_SYSTEM_NAME}/librknn_api/include)
 

@@ -1,6 +1,6 @@
 # **Multimodal Interactive Dialogue Demo**
 
-This demo uses the **Qwen2-VL-2B** model as an example to demonstrate interactive dialogue. For model conversion details, refer to **Qwen2-VL-2B_Demo**.
+This demo uses the **Qwen2-VL-2B** model as an example to demonstrate interactive dialogue. For model conversion details, refer to **Qwen2-VL_Demo**.
 
 ------
 

@@ -1,0 +1,38 @@
+cc_prebuilt_library_shared {
+    name: "librknnrt",
+    compile_multilib: "both",
+
+    target: {
+	android_arm: {
+            srcs: ["Android/librknn_api/armeabi-v7a/librknnrt.so"],
+	},
+        android_arm64: {
+            srcs: ["Android/librknn_api/arm64-v8a/librknnrt.so"],
+	},
+    },
+
+    strip: {
+        none: true,
+    },
+    check_elf_files: false,
+    vendor: true,
+}
+
+cc_prebuilt_binary {
+    name: "rknn_server",
+    target: {
+	android_arm: {
+            srcs: ["Android/rknn_server/arm/rknn_server"],
+	},
+        android_arm64: {
+            srcs: ["Android/rknn_server/arm64/rknn_server"],
+	},
+    },
+
+    init_rc: ["init.rknn_server.rc"],
+    strip: {
+        none: true,
+    },
+    check_elf_files: false,
+    vendor: true,
+}

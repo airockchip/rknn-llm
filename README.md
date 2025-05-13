@@ -33,6 +33,7 @@
 - [x] [MiniCPM models](https://huggingface.co/collections/openbmb/minicpm-65d48bf958302b9fd25b698f)
 - [x] [TeleChat models](https://huggingface.co/Tele-AI)
 - [x] [Qwen2-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)
+- [x] [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)
 - [x] [MiniCPM-V-2_6](https://huggingface.co/openbmb/MiniCPM-V-2_6)
 - [x] [DeepSeek-R1-Distill](https://huggingface.co/collections/deepseek-ai/deepseek-r1-678e1e131c0169c0bc89728d)
 - [x] [Janus-Pro-1B](https://huggingface.co/deepseek-ai/Janus-Pro-1B)
@@ -118,7 +119,7 @@
 
 # Examples
 
-1. Multimodel deployment demo:   [Qwen2-VL-2B_Demo](https://github.com/airockchip/rknn-llm/tree/main/examples/Qwen2-VL-2B_Demo)
+1. Multimodel deployment demo:   [Qwen2-VL_Demo](https://github.com/airockchip/rknn-llm/tree/main/examples/Qwen2-VL_Demo)
 2. API usage demo:  [DeepSeek-R1-Distill-Qwen-1.5B_Demo](https://github.com/airockchip/rknn-llm/tree/main/examples/DeepSeek-R1-Distill-Qwen-1.5B_Demo)
 3. API server demo:  [rkllm_server_demo](https://github.com/airockchip/rknn-llm/tree/main/examples/rkllm_server_demo)
 4. Multimodal_Interactive_Dialogue_Demo  [Multimodal_Interactive_Dialogue_Demo](https://github.com/airockchip/rknn-llm/tree/main/examples/Multimodal_Interactive_Dialogue_Demo)

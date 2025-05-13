@@ -1,0 +1,9 @@
+#on early-boot
+on init
+    start rknn_server
+
+
+service rknn_server /vendor/bin/rknn_server
+    class core
+    seclabel u:r:rknn_server:s0
+    disabled

@@ -1,5 +1,6 @@
 #!/bin/bash
 # Debug / Release / RelWithDebInfo
+set -e
 if [[ -z ${BUILD_TYPE} ]];then
     BUILD_TYPE=Release
 fi
