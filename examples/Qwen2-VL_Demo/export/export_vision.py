@@ -72,17 +72,17 @@ def forward_new(self):
 
         return self.merger(hidden_states)
     return tmp
-
+# 导出 Vison 部分所对应的 onnx 模型，假设输入是2x3x392x392->(28x28)x(3x2x14x14)
+# pixel_values = torch.randn(784, 1176, device="cuda", dtype=torch.float32)
+pixel_values = torch.randn(N, channel, H, W, device="cpu", dtype=torch.float32)
+model.forward = export_onnx
+model = model.to(torch.float32).eval()
 if step == 1:
     print("==========================================================")
     print("Generating the rotary_pos_emb and cu_seqlens done.")
+    feature = model(pixel_values)
 else:
     print("==========================================================")
     print(f"Exporting the vision part of {path} to onnx format.")
-    # 导出 Vison 部分所对应的 onnx 模型，假设输入是2x3x392x392->(28x28)x(3x2x14x14)
-    # pixel_values = torch.randn(784, 1176, device="cuda", dtype=torch.float32)
-    pixel_values = torch.randn(N, channel, H, W, device="cpu", dtype=torch.float32)
-    model.forward = export_onnx
-    model = model.to(torch.float32).eval()
     os.makedirs(os.path.dirname(args.savepath), exist_ok=True)
     torch.onnx.export(model, pixel_values, args.savepath, opset_version=18)
