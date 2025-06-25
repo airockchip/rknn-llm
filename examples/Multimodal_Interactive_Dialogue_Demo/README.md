@@ -24,7 +24,7 @@ You can download the **converted RKLLM model** from [rkllm_model_zoo](https://co
 
    ```cpp
    rkllm_infer_params.keep_history = 1;
-   rkllm_clear_kv_cache(llmHandle, 1);
+   rkllm_clear_kv_cache(llmHandle, 1, nullptr, nullptr);
    ```
 
 2. **Customizing Chat Templates**

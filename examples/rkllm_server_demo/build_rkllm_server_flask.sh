@@ -104,7 +104,7 @@ if [[ -n "$PROMPT_FILE_PATH" ]]; then
 fi
 
 adb shell << EOF
-
+# export RKLLM_LOG_LEVEL=2
 cd $WORKING_PATH/rkllm_server/
 $CMD
 

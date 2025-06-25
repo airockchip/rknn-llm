@@ -1,4 +1,19 @@
 # CHANGELOG
+## v1.2.1
+
+- Added support for RWKV7, Qwen3, and MiniCPM4 models
+- Added support for the RV1126B platform
+- Enabled function calling capability
+- Enabled cross-attention inference
+- Optimize the callback function to support pausing inference
+- Supported multi-batch inference
+- Optimized KV cache clearing interface
+- Improved chat template parsing with support for thinking mode selection
+- Server demo updated to support OpenAI-compatible format
+- Added return of model inference performance statistics
+- Supported mrope multimodal position encoding
+- A new quantization optimization algorithm has been added to improve quantization accuracy
+
 ## v1.2.0
 
 - Supports custom model conversion.

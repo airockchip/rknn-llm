@@ -6,7 +6,7 @@
 
 ```
 rkllm-toolkit==1.2.0
-rkllm-runtime==1.2.0
+rkllm-runtime==1.2.x
 python >=3.8
 ```
 

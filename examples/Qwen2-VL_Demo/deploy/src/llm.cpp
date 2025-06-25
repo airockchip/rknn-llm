@@ -40,7 +40,7 @@ void exit_handler(int signal)
     exit(signal);
 }
 
-void callback(RKLLMResult *result, void *userdata, LLMCallState state)
+int callback(RKLLMResult *result, void *userdata, LLMCallState state)
 {
 
     if (state == RKLLM_RUN_FINISH)
@@ -59,6 +59,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         //     printf("%d token_id: %d logprob: %f\n", i, result->tokens[i].id, result->tokens[i].logprob);
         // }
     }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -110,6 +111,7 @@ int main(int argc, char **argv)
          << endl;
 
     RKLLMInput rkllm_input;
+    memset(&rkllm_input, 0, sizeof(RKLLMInput));  // 将所有内容初始化为 0
 
     // 初始化 infer 参数结构体
     RKLLMInferParam rkllm_infer_params;
@@ -138,6 +140,7 @@ int main(int argc, char **argv)
             }
         }
         rkllm_input.prompt_input = (char*)input_str.c_str();
+        rkllm_input.role = "user";
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
         printf("robot: ");
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);

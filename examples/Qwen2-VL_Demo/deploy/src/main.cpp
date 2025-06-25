@@ -46,7 +46,7 @@ void exit_handler(int signal)
     exit(signal);
 }
 
-void callback(RKLLMResult *result, void *userdata, LLMCallState state)
+int callback(RKLLMResult *result, void *userdata, LLMCallState state)
 {
 
     if (state == RKLLM_RUN_FINISH)
@@ -65,6 +65,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         //     printf("%d token_id: %d logprob: %f\n", i, result->tokens[i].id, result->tokens[i].logprob);
         // }
     }
+    return 0;
 }
 
 // Expand the image into a square and fill it with the specified background color
@@ -95,7 +96,7 @@ cv::Mat expand2square(const cv::Mat& img, const cv::Scalar& background_color) {
 int main(int argc, char** argv)
 {
     if (argc < 7) {
-        std::cerr << "Usage: " << argv[0] << " image_path encoder_model_path llm_model_path max_new_tokens max_context_len core_num\n";
+        std::cerr << "Usage: " << argv[0] << " image_path encoder_model_path llm_model_path max_new_tokens max_context_len rknn_core_num\n";
         return -1;
     }
 
@@ -202,7 +203,7 @@ int main(int argc, char** argv)
         }
         if (input_str == "clear")
         {
-            ret = rkllm_clear_kv_cache(llmHandle, 1);
+            ret = rkllm_clear_kv_cache(llmHandle, 1, nullptr, nullptr);
             if (ret != 0)
             {
                 printf("clear kv cache failed!\n");
@@ -220,9 +221,11 @@ int main(int argc, char** argv)
         if (input_str.find("<image>") == std::string::npos) 
         {
             rkllm_input.input_type = RKLLM_INPUT_PROMPT;
+            rkllm_input.role = "user";
             rkllm_input.prompt_input = (char*)input_str.c_str();
         } else {
             rkllm_input.input_type = RKLLM_INPUT_MULTIMODAL;
+            rkllm_input.role = "user";
             rkllm_input.multimodal_input.prompt = (char*)input_str.c_str();
             rkllm_input.multimodal_input.image_embed = img_vec;
             rkllm_input.multimodal_input.n_image_tokens = n_image_tokens;

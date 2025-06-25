@@ -52,8 +52,12 @@ target_link_libraries(llm PRIVATE ${LIBRKLLMRT})
 
 # demo
 add_executable(${PROJECT_NAME} src/image_enc.cc src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS} ${LIBRKNNRT} ${LIBRKLLMRT})
-
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+  find_package(OpenMP REQUIRED)
+  target_link_libraries(${PROJECT_NAME}  PRIVATE ${OpenCV_LIBS} ${LIBRKNNRT} ${LIBRKLLMRT} log OpenMP::OpenMP_CXX)
+else()
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${OpenCV_LIBS} ${LIBRKNNRT} ${LIBRKLLMRT})
+endif()
 # Hide symbols to avoid possible symbol conflicts with RKLLM
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS  -Wl,--no-undefined,--version-script,${CMAKE_SOURCE_DIR}/c_export.map)
 
