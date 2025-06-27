@@ -72,7 +72,7 @@ def forward_new(self):
 
         return self.merger(hidden_states)
     return tmp
-
+  
 # 导出 Vison 部分所对应的 onnx 模型，假设输入是2x3x392x392->(28x28)x(3x2x14x14)
 # pixel_values = torch.randn(784, 1176, device="cuda", dtype=torch.float32)
 pixel_values = torch.randn(N, channel, H, W, device="cpu", dtype=torch.float32)
