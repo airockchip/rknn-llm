@@ -1,0 +1,32 @@
+{
+    "architectures": [
+        "CustomForCausalLM"
+    ],
+    "auto_map": {
+        "AutoConfig": "configuration_custom.CustomConfig",
+        "AutoModel": "modeling_custom.CustomModel",
+        "AutoModelForCausalLM": "modeling_custom.CustomForCausalLM",
+        "AutoModelForSeq2SeqLM": "modeling_custom.CustomForCausalLM",
+        "AutoModelForSequenceClassification": "modeling_custom.CustomForSequenceClassification"
+    },
+    "bos_token_id": 1,
+    "eos_token_id": 2,
+    "hidden_act": "silu",
+    "hidden_act_param": 0.03,
+    "hidden_size": 1280,
+    "initializer_range": 0.1,
+    "intermediate_size": 3200,
+    "max_position_embeddings": 4096,
+    "num_attention_heads": 20,
+    "num_hidden_layers": 8,
+    "num_key_value_heads": 4,
+    "rms_norm_eps": 1e-05,
+    "rope_scaling": null,
+    "torch_dtype": "bfloat16",
+    "transformers_version": "4.36.0",
+    "use_cache": true,
+    "vocab_size": 73440,
+    "scale_emb": 1,
+    "dim_model_base": 256,
+    "scale_depth": 1
+}

@@ -39,7 +39,7 @@ void exit_handler(int signal)
     exit(signal);
 }
 
-void callback(RKLLMResult *result, void *userdata, LLMCallState state)
+int callback(RKLLMResult *result, void *userdata, LLMCallState state)
 {
     if (state == RKLLM_RUN_FINISH)
     {
@@ -66,6 +66,7 @@ void callback(RKLLMResult *result, void *userdata, LLMCallState state)
         }
         printf("%s", result->text);
     }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -117,7 +118,8 @@ int main(int argc, char **argv)
          << endl;
 
     RKLLMInput rkllm_input;
-
+    memset(&rkllm_input, 0, sizeof(RKLLMInput));  // 将所有内容初始化为 0
+    
     // 初始化 infer 参数结构体
     RKLLMInferParam rkllm_infer_params;
     memset(&rkllm_infer_params, 0, sizeof(RKLLMInferParam));  // 将所有内容初始化为 0
@@ -162,7 +164,7 @@ int main(int argc, char **argv)
     //The model has a built-in chat template by default, which defines how prompts are formatted  
     //for conversation. Users can modify this template using this function to customize the  
     //system prompt, prefix, and postfix according to their needs.  
-    rkllm_set_chat_template(llmHandle, "", "<｜User｜>", "<｜Assistant｜>");
+    // rkllm_set_chat_template(llmHandle, "", "<｜User｜>", "<｜Assistant｜>");
     
     while (true)
     {
@@ -176,7 +178,7 @@ int main(int argc, char **argv)
         }
         if (input_str == "clear")
         {
-            ret = rkllm_clear_kv_cache(llmHandle, 1);
+            ret = rkllm_clear_kv_cache(llmHandle, 1, nullptr, nullptr);
             if (ret != 0)
             {
                 printf("clear kv cache failed!\n");
@@ -192,6 +194,7 @@ int main(int argc, char **argv)
             }
         }
         rkllm_input.input_type = RKLLM_INPUT_PROMPT;
+        rkllm_input.role = "user";
         rkllm_input.prompt_input = (char *)input_str.c_str();
         printf("robot: ");
 

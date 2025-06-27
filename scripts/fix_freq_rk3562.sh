@@ -22,7 +22,3 @@ echo "Fix DDR max frequency:"
 echo userspace > /sys/class/devfreq/dmc/governor
 echo 2112000000 > /sys/class/devfreq/dmc/userspace/set_freq
 cat /sys/class/devfreq/dmc/cur_freq
-
-export LD_LIBRARY_PATH=./lib
-export RKLLM_LOG_LEVEL=1
-sync; echo 3 > /proc/sys/vm/drop_caches

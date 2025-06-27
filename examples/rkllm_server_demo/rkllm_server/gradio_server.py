@@ -28,11 +28,11 @@ LLMCallState.RKLLM_RUN_WAITING  = 1
 LLMCallState.RKLLM_RUN_FINISH  = 2
 LLMCallState.RKLLM_RUN_ERROR   = 3
 
-RKLLMInputMode = ctypes.c_int
-RKLLMInputMode.RKLLM_INPUT_PROMPT      = 0
-RKLLMInputMode.RKLLM_INPUT_TOKEN       = 1
-RKLLMInputMode.RKLLM_INPUT_EMBED       = 2
-RKLLMInputMode.RKLLM_INPUT_MULTIMODAL  = 3
+RKLLMInputType = ctypes.c_int
+RKLLMInputType.RKLLM_INPUT_PROMPT      = 0
+RKLLMInputType.RKLLM_INPUT_TOKEN       = 1
+RKLLMInputType.RKLLM_INPUT_EMBED       = 2
+RKLLMInputType.RKLLM_INPUT_MULTIMODAL  = 3
 
 RKLLMInferMode = ctypes.c_int
 RKLLMInferMode.RKLLM_INFER_GENERATE = 0
@@ -45,7 +45,9 @@ class RKLLMExtendParam(ctypes.Structure):
         ("embed_flash", ctypes.c_int8),
         ("enabled_cpus_num", ctypes.c_int8),
         ("enabled_cpus_mask", ctypes.c_uint32),
-        ("reserved", ctypes.c_uint8 * 106)
+        ("n_batch", ctypes.c_uint8),
+        ("use_cross_attn", ctypes.c_int8),
+        ("reserved", ctypes.c_uint8 * 104)
     ]
 
 class RKLLMParam(ctypes.Structure):
@@ -110,7 +112,9 @@ class RKLLMInputUnion(ctypes.Union):
 
 class RKLLMInput(ctypes.Structure):
     _fields_ = [
-        ("input_mode", ctypes.c_int),
+        ("role", ctypes.c_char_p),
+        ("enable_thinking", ctypes.c_bool),
+        ("input_type", RKLLMInputType),
         ("input_data", RKLLMInputUnion)
     ]
 
@@ -133,13 +137,6 @@ class RKLLMInferParam(ctypes.Structure):
         ("keep_history", ctypes.c_int)
     ]
 
-class RKLLMResultLogits(ctypes.Structure):
-    _fields_ = [
-        ("logits", ctypes.POINTER(ctypes.c_float)),
-        ("vocab_size", ctypes.c_int),
-        ("num_tokens", ctypes.c_int)
-    ]
-
 class RKLLMResultLastHiddenLayer(ctypes.Structure):
     _fields_ = [
         ("hidden_states", ctypes.POINTER(ctypes.c_float)),
@@ -147,12 +144,29 @@ class RKLLMResultLastHiddenLayer(ctypes.Structure):
         ("num_tokens", ctypes.c_int)
     ]
 
+class RKLLMResultLogits(ctypes.Structure):
+    _fields_ = [
+        ("logits", ctypes.POINTER(ctypes.c_float)),
+        ("vocab_size", ctypes.c_int),
+        ("num_tokens", ctypes.c_int)
+    ]
+
+class RKLLMPerfStat(ctypes.Structure):
+    _fields_ = [
+        ("prefill_time_ms", ctypes.c_float),
+        ("prefill_tokens", ctypes.c_int),
+        ("generate_time_ms", ctypes.c_float),
+        ("generate_tokens", ctypes.c_int),
+        ("memory_usage_mb", ctypes.c_float)
+    ]
+
 class RKLLMResult(ctypes.Structure):
     _fields_ = [
         ("text", ctypes.c_char_p),
         ("token_id", ctypes.c_int),
         ("last_hidden_layer", RKLLMResultLastHiddenLayer),
-        ("logits", RKLLMResultLogits)
+        ("logits", RKLLMResultLogits),
+        ("perf", RKLLMPerfStat)
     ]
 
 # Define global variables to store the callback function output for displaying in the Gradio interface
@@ -174,10 +188,11 @@ def callback_impl(result, userdata, state):
     elif state == LLMCallState.RKLLM_RUN_NORMAL:
         global_state = state
         global_text += result.contents.text.decode('utf-8')
+    return 0
     
 
 # Connect the callback function between the Python side and the C++ side
-callback_type = ctypes.CFUNCTYPE(None, ctypes.POINTER(RKLLMResult), ctypes.c_void_p, ctypes.c_int)
+callback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(RKLLMResult), ctypes.c_void_p, ctypes.c_int)
 callback = callback_type(callback_impl)
 
 # Define the RKLLM class, which includes initialization, inference, and release operations for the RKLLM model in the dynamic library
@@ -187,7 +202,7 @@ class RKLLM(object):
         rkllm_param.model_path = bytes(model_path, 'utf-8')
 
         rkllm_param.max_context_len = 4096
-        rkllm_param.max_new_tokens = -1
+        rkllm_param.max_new_tokens = 4096
         rkllm_param.skip_special_token = True
         rkllm_param.n_keep = -1
         rkllm_param.top_k = 1
@@ -208,6 +223,9 @@ class RKLLM(object):
         rkllm_param.img_content = "".encode('utf-8')
 
         rkllm_param.extend_param.base_domain_id = 0
+        rkllm_param.extend_param.embed_flash = 1
+        rkllm_param.extend_param.n_batch = 1
+        rkllm_param.extend_param.use_cross_attn = 0
         rkllm_param.extend_param.enabled_cpus_num = 4
         rkllm_param.extend_param.enabled_cpus_mask = (1 << 4)|(1 << 5)|(1 << 6)|(1 << 7)
         self.handle = RKLLM_Handle_t()
@@ -267,7 +285,9 @@ class RKLLM(object):
 
     def run(self, prompt):
         rkllm_input = RKLLMInput()
-        rkllm_input.input_mode = RKLLMInputMode.RKLLM_INPUT_PROMPT
+        rkllm_input.role = "user".encode('utf-8')
+        rkllm_input.enable_thinking = ctypes.c_bool(False)
+        rkllm_input.input_mode = RKLLMInputType.RKLLM_INPUT_PROMPT
         rkllm_input.input_data.prompt_input = ctypes.c_char_p(prompt.encode('utf-8'))
         self.rkllm_run(self.handle, ctypes.byref(rkllm_input), ctypes.byref(self.rkllm_infer_params), None)
         return

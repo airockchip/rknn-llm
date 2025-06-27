@@ -19,91 +19,30 @@
 - RK3588 Series
 - RK3576 Series
 - RK3562 Series
+- RV1126B Series
 
 # Support Models
 
 - [x] [LLAMA models](https://huggingface.co/meta-llama) 
 - [x] [TinyLLAMA models](https://huggingface.co/TinyLlama) 
-- [x] [Qwen models](https://huggingface.co/models?search=Qwen/Qwen)
-- [x] [Phi models](https://huggingface.co/models?search=microsoft/phi)
+- [x] [Qwen2/Qwen2.5/Qwen3](https://huggingface.co/Qwen)
+- [x] [Phi2/Phi3](https://huggingface.co/microsoft)
 - [x] [ChatGLM3-6B](https://huggingface.co/THUDM/chatglm3-6b/tree/103caa40027ebfd8450289ca2f278eac4ff26405)
-- [x] [Gemma2](https://huggingface.co/collections/google/gemma-2-release-667d6600fd5220e7b967f315)
-- [x] [Gemma3](https://huggingface.co/collections/google/gemma-3-release-67c6c6f89c4f76621268bb6d)
+- [x] [Gemma2/Gemma3](https://huggingface.co/google)
 - [x] [InternLM2 models](https://huggingface.co/collections/internlm/internlm2-65b0ce04970888799707893c)
-- [x] [MiniCPM models](https://huggingface.co/collections/openbmb/minicpm-65d48bf958302b9fd25b698f)
-- [x] [TeleChat models](https://huggingface.co/Tele-AI)
-- [x] [Qwen2-VL-2B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct)
-- [x] [Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)
+- [x] [MiniCPM3/MiniCPM4](https://huggingface.co/openbmb)
+- [x] [TeleChat2](https://huggingface.co/Tele-AI)
+- [x] [Qwen2-VL-2B-Instruct/Qwen2-VL-7B-Instruct/Qwen2.5-VL-3B-Instruct](https://huggingface.co/Qwen)
 - [x] [MiniCPM-V-2_6](https://huggingface.co/openbmb/MiniCPM-V-2_6)
 - [x] [DeepSeek-R1-Distill](https://huggingface.co/collections/deepseek-ai/deepseek-r1-678e1e131c0169c0bc89728d)
 - [x] [Janus-Pro-1B](https://huggingface.co/deepseek-ai/Janus-Pro-1B)
 - [x] [InternVL2-1B](https://huggingface.co/OpenGVLab/InternVL2-1B)
-- [x] [Qwen2.5-VL-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct)
-- [x] [Qwen3](https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f)
+- [x] [SmolVLM](https://huggingface.co/HuggingFaceTB)
+- [x] [RWKV7](https://huggingface.co/fla-hub)
 
-# Model Performance Benchmark
+# Model Performance
 
-| model          | platform | dtype      | seqlen | max_context | new_tokens | TTFT(ms) | Tokens/s | memory(G) |
-| -------------- | -------- | ---------- | ------ | ----------- | ---------- | -------- | -------- | --------- |
-| Qwen2-0.5B     | RK3562   | w4a16_g128 | 64     | 320         | 256        | 524      | 5.67     | 0.39      |
-|                | RK3562   | w4a8_g32   | 64     | 320         | 256        | 873      | 12.00    | 0.48      |
-|                | RK3562   | w8a8       | 64     | 320         | 256        | 477      | 11.50    | 0.61      |
-|                | RK3576   | w4a16      | 64     | 320         | 256        | 204      | 34.50    | 0.4       |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 212      | 32.40    | 0.4       |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 79       | 41.50    | 0.62      |
-|                | RK3588   | w8a8_g128  | 64     | 320         | 256        | 183      | 25.07    | 0.75      |
-| TinyLLAMA-1.1B | RK3576   | w4a16      | 64     | 320         | 256        | 345      | 21.10    | 0.77      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 410      | 18.50    | 0.8       |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 140      | 24.21    | 1.25      |
-|                | RK3588   | w8a8_g512  | 64     | 320         | 256        | 195      | 20.08    | 1.29      |
-| Qwen2-1.5B     | RK3576   | w4a16      | 64     | 320         | 256        | 512      | 14.40    | 1.75      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 550      | 12.75    | 1.76      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 206      | 16.46    | 2.47      |
-|                | RK3588   | w8a8_g128  | 64     | 320         | 256        | 725      | 7        | 2.65      |
-| Phi-3-3.8B     | RK3576   | w4a16      | 64     | 320         | 256        | 975      | 6.6      | 2.16      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 1180     | 5.85     | 2.23      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 516      | 7.44     | 3.88      |
-|                | RK3588   | w8a8_g512  | 64     | 320         | 256        | 610      | 6.13     | 3.95      |
-| ChatGLM3-6B    | RK3576   | w4a16      | 64     | 320         | 256        | 1168     | 4.62     | 3.86      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 1583     | 3.82     | 3.96      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 800      | 4.95     | 6.69      |
-|                | RK3588   | w8a8_g128  | 64     | 320         | 256        | 2190     | 2.7      | 7.18      |
-| Gemma2-2B      | RK3576   | w4a16      | 64     | 320         | 256        | 628      | 8        | 3.63      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 776      | 7.4      | 3.63      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 342      | 9.67     | 4.84      |
-|                | RK3588   | w8a8_g128  | 64     | 320         | 256        | 1055     | 5.49     | 5.14      |
-| InternLM2-1.8B | RK3576   | w4a16      | 64     | 320         | 256        | 475      | 13.3     | 1.59      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 572      | 11.95    | 1.62      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 206      | 15.66    | 2.38      |
-|                | RK3588   | w8a8_g512  | 64     | 320         | 256        | 298      | 12.66    | 2.45      |
-| MiniCPM3-4B    | RK3576   | w4a16      | 64     | 320         | 256        | 1397     | 4.8      | 2.7       |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 1645     | 4.39     | 2.8       |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 702      | 6.15     | 4.65      |
-|                | RK3588   | w8a8_g128  | 64     | 320         | 256        | 1691     | 3.42     | 5.06      |
-| llama3-8B      | RK3576   | w4a16      | 64     | 320         | 256        | 1608     | 3.6      | 5.63      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 2010     | 3        | 5.76      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 1128     | 3.79     | 9.21      |
-|                | RK3588   | w8a8_g512  | 64     | 320         | 256        | 1281     | 3.05     | 9.45      |
-| Qwen3-0.6B     | RK3576   | w4a16      | 64     | 320         | 256        | 288.70   | 21.44    | 0.57      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 313.44   | 18.36    | 0.61      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 100.00   | 32.60    | 0.75      |
-| Qwen3-1.7B     | RK3576   | w4a16      | 64     | 320         | 256        | 517.00   | 11.19    | 1.17      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 594.00   | 10.25    | 1.25      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 215.00   | 14.37    | 1.82      |
-| Qwen3-4B       | RK3576   | w4a16      | 64     | 320         | 256        | 1056.00  | 5.52     | 2.31      |
-|                | RK3576   | w4a16_g128 | 64     | 320         | 256        | 1308.00  | 5.05     | 2.47      |
-|                | RK3588   | w8a8       | 64     | 320         | 256        | 586.00   | 6.53     | 4.00      |
-
-| multimodal model | image input size | vision model dtype | vision infer time(s) | vision memory(MB) | llm model dtype | seqlen | max_context | new_tokens | TTFT(ms) | Tokens/s | llm memory(G) | platform |
-|:-------------- |:---------- |:------:|:-----------:|:----------:|:--------:|:--------:|:---------:|:--------:|:---------:|:---------:|:---------:|:---------:|
-| Qwen2-VL-2B | (1, 3, 392, 392) | fp16 | 3.55 | 1436.52 | w4a16 | 256 | 384 | 128 | 2094.17 | 13.23 | 1.75 | RK3576 |
-|                              |    | fp16  | 3.28 | 1436.52 | w8a8 | 256 | 384 | 128 | 856.86 | 16.19 | 2.47 | RK3588 |
-| MiniCPM-V-2_6 | (1, 3, 448, 448) | fp16 | 2.40 | 1031.30 | w4a16 | 128 | 256 | 128 | 2997.70 | 3.84 | 5.50 | RK3576 |
-|                            |    | fp16  | 3.27 | 976.98 | w8a8 | 128 | 256 | 128 | 1720.60 | 4.13 | 8.88 | RK3588 |
-
-- This performance data were collected based on the maximum CPU and NPU frequencies of each platform. 
-- The script for setting the frequencies is located in the scripts directory.
-- The vision model were tested based on all NPU core with rknn-toolkit2 version 2.2.0.
+1.  [Benchmark](https://github.com/airockchip/rknn-llm/tree/main/benchmark.md) results of common LLMs.
 
 # **Performance Testing Methods**
 
@@ -140,7 +79,8 @@
 export BUILD_CUDA_EXT=0
 ```
 - On some platforms, you may encounter an error indicating that **libomp.so** cannot be found. To resolve this, locate the library in the corresponding cross-compilation toolchain and place it in the board's lib directory, at the same level as librkllmrt.so.
-- Latest version: [ <u>v1.2.0](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.2.0)</u>
+- RWKV model conversion only supports Python 3.12. Please use `requirements_rwkv7.txt` to set up the pip environment.
+- Latest version: [ <u>v1.2.1](https://github.com/airockchip/rknn-llm/releases/tag/release-v1.2.1)</u>
 
 # RKNN Toolkit2
 
@@ -150,20 +90,19 @@ https://github.com/airockchip/rknn-toolkit2
 
 # CHANGELOG
 
-## v1.2.0
+## v1.2.1
 
-- Supports custom model conversion.
-- Supports chat_template configuration.
-- Enables multi-turn dialogue interactions.
-- Implements automatic prompt cache reuse for improved inference efficiency.
-- Expands maximum context length to 16K.
-- Supports embedding flash storage to reduce memory usage.
-- Introduces the GRQ Int4 quantization algorithm.
-- Supports GPTQ-Int8 model conversion.
-- Compatible with the RK3562 platform.
-- Added support for visual multimodal models such as InternVL2, Janus, and Qwen2.5-VL.
-- Supports CPU core configuration.
-- Added support for Gemma3
-- Added support for Python 3.9/3.11/3.12
+- Added support for RWKV7, Qwen3, and MiniCPM4 models
+- Added support for the RV1126B platform
+- Enabled function calling capability
+- Enabled cross-attention inference
+- Optimize the callback function to support pausing inference
+- Supported multi-batch inference
+- Optimized KV cache clearing interface
+- Improved chat template parsing with support for thinking mode selection
+- Server demo updated to support OpenAI-compatible format
+- Added return of model inference performance statistics
+- Supported mrope multimodal position encoding
+- A new quantization optimization algorithm has been added to improve quantization accuracy
 
 for older version, please refer [CHANGELOG](CHANGELOG.md)
