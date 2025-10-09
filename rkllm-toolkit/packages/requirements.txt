@@ -23,7 +23,8 @@ pillow==10.4.0
 auto_gptq==0.7.1
 optimum==1.23.3
 jsonlines==4.0.0
-timm==1.0.19numpy >= 1.23.1,<=1.26.4
+timm==1.0.19
+numpy >= 1.23.1,<=1.26.4
 transformers == 4.55.2
 torch == 2.6.0
 datasets == 4.1.1
