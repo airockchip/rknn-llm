@@ -24,7 +24,7 @@ endif()
 
 # opencv
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/opencv/opencv-linux-aarch64/share/OpenCV)
+  set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/opencv/opencv-linux-${TARGET_LIB_ARCH}/share/OpenCV)
 elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
   set(OpenCV_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/opencv/OpenCV-android-sdk/sdk/native/jni/abi-${CMAKE_ANDROID_ARCH_ABI})
 endif()
@@ -36,7 +36,7 @@ set(LIBRKNNRT ${RKNN_PATH}/${CMAKE_SYSTEM_NAME}/librknn_api/${TARGET_LIB_ARCH}/l
 set(LIBRKNNRT_INCLUDES ${RKNN_PATH}/${CMAKE_SYSTEM_NAME}/librknn_api/include)
 
 # imgenc
-include_directories(src/image_enc.h ${LIBRKNNRT_INCLUDES})
+include_directories(src ${LIBRKNNRT_INCLUDES})
 add_executable(imgenc src/image_enc.cc src/img_encoder.cpp)
 target_link_libraries(imgenc PRIVATE ${OpenCV_LIBS} ${LIBRKNNRT})
 

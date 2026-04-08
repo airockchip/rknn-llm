@@ -105,6 +105,7 @@ int main(int argc, char** argv)
     param.max_new_tokens = std::atoi(argv[4]);
     param.max_context_len = std::atoi(argv[5]);
     param.skip_special_token = true;
+    // On the RV1126B, a "failed to submit" error may occur. See the issue: https://github.com/airockchip/rknn-llm/issues/483
     param.extend_param.base_domain_id = 1;
 
     param.img_start   = "<|vision_start|>";
