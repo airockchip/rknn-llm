@@ -5,7 +5,9 @@ import argparse
 
 argparse = argparse.ArgumentParser()
 argparse.add_argument('--path', type=str, default='./onnx/qwen2_5-vl-3b_vision.onnx', help='model path', required=False)
-argparse.add_argument('--model_name', type=str, default='qwen2_5-vl-3b', help='model name', required=False)
+argparse.add_argument('--model_name', type=str, default='qwen2_5-vl-3b',
+                    choices=['minicpm-v-2_6', 'qwen2_5-vl-3b', 'qwen3-vl', 'qwen3.5', 'smolvlm', 'internvl3-1b', 'deepseekocr'],
+                    help='model name', required=True)
 argparse.add_argument('--target-platform', type=str, default='rk3588', help='target platform', required=False)
 argparse.add_argument('--batch_size', type=int, default=1, help='batch size', required=False)
 argparse.add_argument('--height', type=int, default=448, help='image height', required=False)
@@ -33,7 +35,7 @@ if modelname == 'qwen2_5-vl-3b':
     grid_t = args.batch_size//2 if args.batch_size % 2 == 0 else (args.batch_size + 1)//2
     input_initial_val = [None, np.array([[grid_t, args.height//14, args.width//14]], dtype=np.int64)]
     op_target = {"/vpm/patch_embed/proj/Conv_output_0_conv_tp_sw": 'cpu'}
-elif modelname == 'qwen3-vl':
+elif modelname == 'qwen3-vl' or modelname == 'qwen3.5':
     inputs = ['pixel', 'grid_thw']
     input_size_list = [[args.batch_size, 3, args.height, args.width], [1,3]]
     grid_t = args.batch_size//2 if args.batch_size % 2 == 0 else (args.batch_size + 1)//2

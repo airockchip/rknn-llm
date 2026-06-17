@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 
     std::chrono::high_resolution_clock::time_point t_every_begin_us;
     std::chrono::high_resolution_clock::time_point t_every_end_us;
-    float img_vec[rknn_app_ctx.model_image_token * rknn_app_ctx.model_embed_size];
+    float img_vec[rknn_app_ctx.model_image_token * rknn_app_ctx.model_embed_size * rknn_app_ctx.io_num.n_output];
     t_every_begin_us = std::chrono::high_resolution_clock::now();
     ret = run_imgenc(&rknn_app_ctx, resized_img.data, img_vec);
     if (ret != 0) {

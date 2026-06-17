@@ -4,25 +4,57 @@ import torchvision.transforms as T
 from torchvision.transforms.functional import InterpolationMode
 from PIL import Image
 import json
+import pickle
 import numpy as np
 from tqdm import tqdm
-from transformers import AutoModel, AutoTokenizer, AutoProcessor, Qwen2VLForConditionalGeneration
+from transformers import AutoModel, AutoTokenizer, AutoProcessor, Qwen2VLForConditionalGeneration, Qwen2_5_VLForConditionalGeneration, Qwen3VLForConditionalGeneration, Qwen3_5ForConditionalGeneration
 import argparse
 
+class StopForward(Exception):
+    """Used to stop forward pass intentionally."""
+    pass
+
 argparse = argparse.ArgumentParser()
-argparse.add_argument('--path', type=str, default='Qwen/Qwen2-VL-2B-Instruct', help='model path', required=False)
+argparse.add_argument('--path', type=str, help='model path', required=True)
+argparse.add_argument('--model_type', type=str, choices=['qwen2vl', 'qwen2.5vl', 'qwen3vl', 'qwen3.5'],
+                      help='Model type to use', required=True)
 args = argparse.parse_args()
 
-path = args.path
-model = Qwen2VLForConditionalGeneration.from_pretrained(
-    path, torch_dtype="auto", device_map="cpu",
-    low_cpu_mem_usage=True,
+## 模型类型映射
+MODEL_CLASSES = {
+    'qwen2vl': Qwen2VLForConditionalGeneration,
+    'qwen2.5vl': Qwen2_5_VLForConditionalGeneration,
+    'qwen3vl': Qwen3VLForConditionalGeneration,
+    'qwen3.5': Qwen3_5ForConditionalGeneration,
+}
+
+## 加载模型
+model_class = MODEL_CLASSES[args.model_type]
+print(f"Loading model: {args.model_type} from {args.path}")
+model = model_class.from_pretrained(
+    args.path, torch_dtype="auto", device_map="cpu",
     trust_remote_code=True).eval()
 
-processor = AutoProcessor.from_pretrained(path)
 
+processor = AutoProcessor.from_pretrained(args.path)
+
+## 定义hook
+captured = []
+def model_pre_hook(module, args, kwargs):
+    captured.append(kwargs)
+    raise StopForward
+
+handle = model.model.language_model.register_forward_pre_hook(
+    model_pre_hook,
+    with_kwargs=True
+)
+
+
+## 生成量化校准数据
+info = []
+info_path = "data/llm_inputs.json"
 datasets = json.load(open("data/datasets.json", 'r'))
-for data in datasets:
+for idx, data in enumerate(tqdm(datasets)):
     image_name = data["image"].split(".")[0]
     imgp = os.path.join(data["image_path"], data["image"])
     image = Image.open(imgp)
@@ -43,30 +75,19 @@ for data in datasets:
         text=[text_prompt], images=[image], padding=True, return_tensors="pt"
     )
     inputs = inputs.to(model.device)
-    inputs_embeds = model.model.embed_tokens(inputs["input_ids"])
-    pixel_values = inputs["pixel_values"].type(model.visual.get_dtype())
-    image_mask = inputs["input_ids"] == model.config.image_token_id
-    image_embeds = model.visual(pixel_values, grid_thw=inputs["image_grid_thw"]).to(inputs_embeds.device)
-    inputs_embeds[image_mask] = image_embeds
-    print("inputs_embeds", inputs_embeds.shape)
-    os.makedirs("data/inputs_embeds/", exist_ok=True)
-    np.save("data/inputs_embeds/{}".format(image_name), inputs_embeds.to(dtype=torch.float16).cpu().detach().numpy())
+    try:
+        output = model(**inputs)
+    except StopForward:
+        pass
+    temp = captured[-1]
+    sample_name = "sample_{}".format(idx)
+    os.makedirs("data/llm_inputs/", exist_ok=True)
+    pickle_path = "data/llm_inputs/{}".format(sample_name)
+    info.append({"sample":"llm_inputs/{}".format(sample_name), "token_nums":temp["inputs_embeds"].shape[1]})
+    with open(pickle_path, 'wb') as f:
+        pickle.dump(temp, f)
+    captured.pop()
     
-with open('data/inputs.json', 'w') as json_file:
-    json_file.write('[\n')
-    first = True
-    for data in tqdm(datasets):
-        input_embed = np.load(os.path.join("data/inputs_embeds", data["image"].split(".")[0]+'.npy'))
-        target = data["target"]
-        input_dict = {
-            "input_embed": input_embed.tolist(),
-            "target": target
-        }
-        if not first:
-            json_file.write(',\n')
-        else:
-            first = False
-        json.dump(input_dict, json_file)
-    json_file.write('\n]')
-
-print("Done")
+handle.remove()
+with open(info_path, 'w', encoding='utf-8') as f:
+    json.dump(info, f, indent=2, ensure_ascii=False)

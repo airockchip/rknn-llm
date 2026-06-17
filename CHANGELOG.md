@@ -1,4 +1,18 @@
 # CHANGELOG
+## v1.3.0
+
+- Added support for Qwen3.5, Gemma4, and SmolLM3 models.
+- Optimized the multimodal input interface and cache reuse strategy.
+- Added support for multiple EOS token IDs and introduced the ignore_eos_token parameter.
+- Optimized performance on 32-bit systems.
+- Added support for tokenizer and embedding callbacks.
+- Improved long-context decoding performance for certain models on the RK3576 platform.
+- Optimized the quantization method for embedding input data.
+- Fixed memory usage statistics issues on the RV1126B platform.
+- Fixed numerical overflow issues during inference for certain models on the RK3588 platform.
+- Improved  rkllm_server_demo compatibility with OpenAI API interfaces.
+- Added support for overriding max_new_tokens and sampling parameters in RKLLMInferParam
+
 ## v1.2.3
 
 - Added support for InternVL3.5, DeepSeekOCR, and Qwen3-VL models

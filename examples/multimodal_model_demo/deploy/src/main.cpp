@@ -89,10 +89,11 @@ cv::Mat expand2square(const cv::Mat& img, const cv::Scalar& background_color) {
 
 int main(int argc, char** argv)
 {
-    if (argc < 7) {
+    if (argc < 8) {
         std::cerr << "Usage: " << argv[0]
-                << " image_path encoder_model_path llm_model_path max_new_tokens max_context_len rknn_core_num "
-                << "[img_start] [img_end] [img_content]\n";
+                << " image_path encoder_model_path llm_model_path max_new_tokens max_context_len rknn_core_num platform "
+                << "[img_start] [img_end] [img_content]\n"
+                << "  platform: rk3588 | rk3576 | rk3562 | rv1126b\n";
         return -1;
     }
 
@@ -105,34 +106,46 @@ int main(int argc, char** argv)
     param.max_new_tokens = std::atoi(argv[4]);
     param.max_context_len = std::atoi(argv[5]);
     param.skip_special_token = true;
-    param.extend_param.base_domain_id = 1;
+    param.extend_param.base_domain_id = 0;
 
-    param.img_start   = "<|vision_start|>";
-    param.img_end     = "<|vision_end|>";
-    param.img_content = "<|image_pad|>";
+    const char* platform = argv[7];
+    if (strcmp(platform, "rv1126b") == 0 || strcmp(platform, "rk3562") == 0) {
+        param.extend_param.base_domain_id = 0;
+    } else if (strcmp(platform, "rk3588") == 0 || strcmp(platform, "rk3576") == 0) {
+        param.extend_param.base_domain_id = 1;
+    } else {
+        std::cerr << "Error: Unknown platform '" << platform
+                  << "'. Supported: rk3588, rk3576, rk3562, rv1126b\n";
+        return -1;
+    }
+
+    const char* img_start   = "<|vision_start|>";
+    const char* img_end     = "<|vision_end|>";
+    const char* img_content = "<|image_pad|>";
 
     //DeepSeekOCR
-    // param.img_start   = "";
-    // param.img_end     = "";
-    // param.img_content = "<｜▁pad▁｜>";
+    // img_start   = "";
+    // img_end     = "";
+    // img_content = "<｜▁pad▁｜>";
 
-    if (argc == 7) {
+    if (argc == 8) {
         std::cerr << "[Warning] Using default img_start/img_end/img_content: "
-                << param.img_start << " , "
-                << param.img_end << " , "
-                << param.img_content
+                << img_start << " , "
+                << img_end << " , "
+                << img_content
                 << ". Please customize these values according to your model, "
                 << "otherwise the output may be incorrect.\n";
     }
 
-    if (argc > 7) param.img_start   = argv[7];
-    if (argc > 8) param.img_end     = argv[8];
-    if (argc > 9) param.img_content = argv[9];
+    if (argc > 8) img_start   = argv[8];
+    if (argc > 9) img_end     = argv[9];
+    if (argc > 10) img_content = argv[10];
 
     int ret;
     std::chrono::high_resolution_clock::time_point t_start_us = std::chrono::high_resolution_clock::now();
-
-    ret = rkllm_init(&llmHandle, &param, callback);
+    RKLLMCallback rkllm_callback = {};
+    rkllm_callback.result_callback = callback;
+    ret = rkllm_init(&llmHandle, &param, &rkllm_callback);
     if (ret == 0){
         printf("rkllm init success\n");
     } else {
@@ -248,11 +261,14 @@ int main(int argc, char** argv)
             rkllm_input.input_type = RKLLM_INPUT_MULTIMODAL;
             rkllm_input.role = "user";
             rkllm_input.multimodal_input.prompt = (char*)input_str.c_str();
-            rkllm_input.multimodal_input.image_embed = img_vec;
-            rkllm_input.multimodal_input.n_image_tokens = n_image_tokens;
-            rkllm_input.multimodal_input.n_image = 1;
-            rkllm_input.multimodal_input.image_height = image_height;
-            rkllm_input.multimodal_input.image_width = image_width;
+            rkllm_input.multimodal_input.image.image_embed = img_vec;
+            rkllm_input.multimodal_input.image.n_image_tokens = n_image_tokens;
+            rkllm_input.multimodal_input.image.n_image = 1;
+            rkllm_input.multimodal_input.image.image_start = img_start;
+            rkllm_input.multimodal_input.image.image_end = img_end;
+            rkllm_input.multimodal_input.image.image_content = img_content;
+            rkllm_input.multimodal_input.image.image_height = image_height;
+            rkllm_input.multimodal_input.image.image_width = image_width;
         }
         printf("robot: ");
         rkllm_run(llmHandle, &rkllm_input, &rkllm_infer_params, NULL);

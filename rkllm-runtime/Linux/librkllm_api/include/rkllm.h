@@ -54,6 +54,29 @@ typedef enum {
 } RKLLMInferMode;
 
 /**
+ * @brief Function pointer type for callback to get LLM embeddings
+ * @param userdata Pointer to user-defined data
+ * @param tokens Array of token IDs
+ * @param num_tokens Number of tokens in the tokens array
+ * @param embed Pointer to buffer that will store the embedding output
+ * @param len Length of the embedding buffer in bytes
+ * @return Returns 0 on success, non-zero value on failure
+ */
+typedef int (*LLMGetEmbedCallback)(void* userdata, int32_t* tokens, uint64_t num_tokens, void* embed, uint64_t len);
+
+/**
+ * @typedef LLMTokenizerCallback
+ * @brief Callback function to handle tokenization.
+ * @param userdata Pointer to user data for the callback.
+ * @param text Pointer to the input text.
+ * @param text_len Length of input text in bytes.
+ * @param tokens Pointer to the array of token IDs.
+ * @param n_tokens_max Max number of output tokens.
+ * @return Return token count (>=0) on success, negative value on error.
+ */
+typedef int (*LLMTokenizerCallback)(void* userdata, const char* text, int32_t text_len, int32_t* tokens, int32_t n_tokens_max);
+
+/**
  * @struct RKLLMExtendParam
  * @brief The extend parameters for configuring an LLM instance.
  */
@@ -63,7 +86,7 @@ typedef struct {
     int8_t       enabled_cpus_num;      /**< Number of CPUs enabled for inference. */
     uint32_t     enabled_cpus_mask;     /**< Bitmask indicating which CPUs to enable for inference. */
     uint8_t      n_batch;               /**< Number of input samples processed concurrently in one forward pass. Set to >1 to enable batched inference. Default is 1. */
-    int8_t       use_cross_attn;        /**< Whether to enable cross attention (non-zero to enable, 0 to disable). */
+    int8_t       use_cross_attn;        /**< Whether to enable cross attention (1 to enable, 0 to disable). */
     uint8_t      reserved[104];         /**< reserved */
 } RKLLMExtendParam;
 
@@ -86,10 +109,8 @@ typedef struct {
     float mirostat_tau;             /**< Tau parameter for Mirostat sampling. */
     float mirostat_eta;             /**< Eta parameter for Mirostat sampling. */
     bool skip_special_token;        /**< Whether to skip special tokens during generation. */
+    bool ignore_eos_token;          /**< Whether to ignore the end-of-sequence token (true to ignore, false to consider). */
     bool is_async;                  /**< Whether to run inference asynchronously. */
-    const char* img_start;          /**< Starting position of an image in multimodal input. */
-    const char* img_end;            /**< Ending position of an image in multimodal input. */
-    const char* img_content;        /**< Pointer to the image content. */
     RKLLMExtendParam extend_param; /**< Extend parameters. */
 } RKLLMParam;
 
@@ -126,12 +147,28 @@ typedef struct {
  * @brief Represents multimodal input (e.g., text and image).
  */
 typedef struct {
-    char* prompt;           /**< Text prompt input. */
-    float* image_embed;     /**< Embedding of the images (of size n_image * n_image_tokens * image_embed_length). */
-    size_t n_image_tokens;  /**< Number of image_token. */
-    size_t n_image;         /**< Number of image. */
-    size_t image_width;     /**< Width of image. */
-    size_t image_height;    /**< Height of image. */
+    char* prompt;                  /**< Text prompt input. */
+    struct {
+        float* image_embed;        /**< Embedding of the image (size: n_image * n_image_tokens * embedding_dim * sizeof(float32)). */
+        size_t n_image_tokens;     /**< Number of image tokens. */
+        size_t n_image;            /**< Number of images. */
+        const char* image_start;   /**< Start tag for image in multimodal input. */
+        const char* image_end;     /**< End tag for image in multimodal input. */
+        const char* image_content; /**< Content tag for image in multimodal input. */
+        size_t image_width;        /**< Width of image. */
+        size_t image_height;       /**< Height of image. */
+    } image;
+    struct {
+        float* video_embed;        /**< Embedding of the video (size: n_video * n_frame_per_video * n_frame_tokens * embedding_dim * sizeof(float32)). */
+        size_t n_frame_tokens;     /**< Number of frame tokens. */
+        size_t n_frame_per_video;  /**< Number of frames per video. */
+        size_t n_video;            /**< Number of video. */
+        const char* video_start;   /**< Start tag for video in multimodal input. */
+        const char* video_end;     /**< End tag for video in multimodal input. */
+        const char* video_content; /**< Content tag for video in multimodal input. */
+        size_t frame_width;        /**< Width of frame. */
+        size_t frame_height;       /**< Height of frame. */
+    } video;
 } RKLLMMultiModalInput;
 
 /**
@@ -188,6 +225,18 @@ typedef struct {
     int num_tokens;           /**< Number of tokens in the encoder sequence. */
 } RKLLMCrossAttnParam;
 
+typedef struct {
+  int32_t top_k;           /**< Top-K sampling parameter for token generation. */
+  float top_p;             /**< Top-P (nucleus) sampling parameter. */
+  float temperature;       /**< Sampling temperature, affecting the randomness of token selection. */
+  float repeat_penalty;    /**< Penalty for repeating tokens in generation. */
+  float frequency_penalty; /**< Penalizes frequent tokens during generation. */
+  float presence_penalty;  /**< Penalizes tokens based on their presence in the input. */
+  int32_t mirostat;        /**< Mirostat sampling strategy flag (0 to disable). */
+  float mirostat_tau;      /**< Tau parameter for Mirostat sampling. */
+  float mirostat_eta;      /**< Eta parameter for Mirostat sampling. */
+} RKLLMSamplingParam;
+
 /**
  * @struct RKLLMInferParam
  * @brief Structure for defining parameters during inference.
@@ -196,7 +245,9 @@ typedef struct {
     RKLLMInferMode mode;                        /**< Inference mode (e.g., generate or get last hidden layer). */
     RKLLMLoraParam* lora_params;                /**< Pointer to Lora adapter parameters. */
     RKLLMPromptCacheParam* prompt_cache_params; /**< Pointer to prompt cache parameters. */
+    RKLLMSamplingParam* sampling_params;        /**< Pointer to sampling parameters. If set, overrides the sampling params from RKLLMParam for this run. */
     int keep_history;                           /**Flag to determine history retention (1: keep history, 0: discard history).*/
+    int32_t max_new_tokens;                     /**< Maximum number of new tokens to generate. It will replace the value set in RKLLMParam during init. Set to <=0 to use the init value. */
 } RKLLMInferParam;
 
 /**
@@ -253,8 +304,28 @@ typedef struct {
  *         - 0: Continue inference normally.
  *         - 1: Pause inference. If the user wants to modify or intervene in the result (e.g., editing output, injecting new prompt),
  *              return 1 to suspend the current inference. Later, call `rkllm_run` with updated content to resume inference.
+ *         - 2: Release the current output buffer. This is useful when the current output is no longer needed and the user wants to 
+ *              reclaim memory immediately, especially when using RKLLM_INFER_GET_LAST_HIDDEN_LAYER or RKLLM_INFER_GET_LOGITS modes. 
+ *              In these modes, the output buffer may occupy a significant amount of memory, particularly for large vocabularies.
  */
 typedef int(*LLMResultCallback)(RKLLMResult* result, void* userdata, LLMCallState state);
+
+/**
+ * @struct RKLLMCallback
+ * @brief Structure to hold callback functions for LLM operations.
+ */
+typedef struct
+{
+    LLMResultCallback result_callback;   /**< Callback for results returned by the LLM. */
+    void*             result_userdata;   /**< Userdata for LLMResultCallback. */
+
+    LLMTokenizerCallback tokenizer_callback; /**< Optional: required when model has no internal tokenizer. */
+    void*                tokenizer_userdata; /**< Userdata for LLMTokenizerCallback. */
+
+    LLMGetEmbedCallback embed_callback;  /**< Optional: Only required when model has no internal embedding layer. */
+    void*               embed_userdata;  /**< Userdata for LLMGetEmbedCallback. */
+
+} RKLLMCallback;
 
 /**
  * @brief Creates a default RKLLMParam structure with preset values.
@@ -266,10 +337,10 @@ RKLLMParam rkllm_createDefaultParam();
  * @brief Initializes the LLM with the given parameters.
  * @param handle Pointer to the LLM handle.
  * @param param Configuration parameters for the LLM.
- * @param callback Callback function to handle LLM results.
+ * @param callback Pointer to callback structure for LLM events.
  * @return Status code (0 for success, non-zero for failure).
  */
-int rkllm_init(LLMHandle* handle, RKLLMParam* param, LLMResultCallback callback);
+int rkllm_init(LLMHandle* handle, RKLLMParam* param, RKLLMCallback* callback);
 
 /**
  * @brief Loads a Lora adapter into the LLM.
@@ -306,7 +377,9 @@ int rkllm_destroy(LLMHandle handle);
  * @param handle LLM handle.
  * @param rkllm_input Input data for the LLM.
  * @param rkllm_infer_params Parameters for the inference task.
- * @param userdata Pointer to user data for the callback.
+ * @param userdata Pointer to userdata for the result callback.
+ *        If userdata is not NULL, it will be used preferentially.
+ *        Otherwise, result_userdata will be used as fallback.
  * @return Status code (0 for success, non-zero for failure).
  */
 int rkllm_run(LLMHandle handle, RKLLMInput* rkllm_input, RKLLMInferParam* rkllm_infer_params, void* userdata);
@@ -316,7 +389,9 @@ int rkllm_run(LLMHandle handle, RKLLMInput* rkllm_input, RKLLMInferParam* rkllm_
  * @param handle LLM handle.
  * @param rkllm_input Input data for the LLM.
  * @param rkllm_infer_params Parameters for the inference task.
- * @param userdata Pointer to user data for the callback.
+ * @param userdata Pointer to userdata for the result callback.
+ *        If userdata is not NULL, it will be used preferentially.
+ *        Otherwise, result_userdata will be used as fallback.
  * @return Status code (0 for success, non-zero for failure).
  */
 int rkllm_run_async(LLMHandle handle, RKLLMInput* rkllm_input, RKLLMInferParam* rkllm_infer_params, void* userdata);
@@ -331,7 +406,7 @@ int rkllm_abort(LLMHandle handle);
 /**
  * @brief Checks if an LLM task is currently running.
  * @param handle LLM handle.
- * @return Status code (0 if a task is running, non-zero for otherwise).
+ * @return Status code (1 if a task is running).
  */
 int rkllm_is_running(LLMHandle handle);
 

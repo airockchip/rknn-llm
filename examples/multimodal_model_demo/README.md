@@ -3,8 +3,8 @@
 2. The open-source model used in this demo is available at: [Qwen2-VL-2B](https://huggingface.co/Qwen/Qwen2-VL-2B-Instruct), [Qwen2-VL-7B](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)
 
 ## 1. Requirements
-```
-rkllm-toolkit==1.2.x
+```text
+rkllm-toolkit>=1.3.0
 rknn-toolkit2>=2.3.2
 ```
 
@@ -38,23 +38,23 @@ python export/export_vision_qwen2.py --step 0 --path /path/to/Qwen2-VL-model --s
 
 Note: if change the batch, height and width, the cu_seqlens and rotary_pos_emb must be re-generated.
 
-3. If you want to convert models such as Qwen2.5-VL, Qwen3-VL, MiniCPM-V-2_6, SmolVLM, DeepSeekOCR,or InternVL3, please use the script export/export_vision.py instead.
+3. If you want to convert models such as Qwen2.5-VL, Qwen3-VL, MiniCPM-V-2_6, SmolVLM, DeepSeekOCR, Qwen3.5 or InternVL3, please use the script export/export_vision.py instead.
 
 4. When converting the DeepSeekOCR vision model to onnx, you need to set the `antialias` attribute to `False` for all `F.interpolate` calls in the `deepencoder.py` file.
 
-   ```
-   1、pip install onnx==1.18.0
-   2、python export_vision.py --path=/path/to/DeepSeek-OCR --model_name=deepseekocr --height=448 --width=448
-   3、python export_vision_rknn.py --path=./onnx/deepseekocr_vision.onnx --model_name=deepseekocr --height=448 --width=448
-   ```
+```bash
+1、pip install onnx==1.18.0
+2、python export_vision.py --path=/path/to/DeepSeek-OCR --model_name=deepseekocr --height=448 --width=448
+3、python export_vision_rknn.py --path=./onnx/deepseekocr_vision.onnx --model_name=deepseekocr --height=448 --width=448
+```
 
 5. The code for converting Qwen3-VL vision to RKNN is as follows.
 
-   ```
-   1、pip install transformers==4.57.0
-   2、python export_vision.py --path=/path/to/Qwen3-VL --model_name=qwen3-vl --height=448 --width=448
-   3、python export_vision_rknn.py --path=./onnx/qwen3-vl_vision.onnx --model_name=qwen3-vl --height=448 --width=448
-   ```
+```bash
+1、pip install transformers==4.57.0
+2、python export_vision.py --path=/path/to/Qwen3-VL --model_name=qwen3-vl --height=448 --width=448
+3、python export_vision_rknn.py --path=./onnx/qwen3-vl_vision.onnx --model_name=qwen3-vl --height=448 --width=448
+```
 
 - ### convert to rknn
 
@@ -69,7 +69,7 @@ python export/export_vision_rknn.py --path /path/to/save/qwen2-vl-vision.onnx --
 1. We collected 20 image-text examples from the MMBench_DEV_EN dataset, stored in `data/datasets.json` and `data/datasets`. To use these data, you first need to create `input_embeds` for quantizing the RKLLM model. Run the following code to generate `data/inputs.json`.
 
 ```bash
-python data/make_input_embeds_for_quantize.py --path /path/to/Qwen2-VL-model
+python data/make_input_embeds_for_quantize.py --path /path/to/Qwen2-VL-model --model_type qwen2vl
 ```
 
 2. Use the following code to export the RKLLM model.
@@ -87,7 +87,7 @@ In the `deploy` directory, we provide example code for board-side inference. Thi
 ### 1. Compile and Build
 Users can directly compile the example code by running the `deploy/build-linux.sh` or `deploy/build-android.sh` script (replacing the cross-compiler path with the actual path). This will generate an `install/demo_Linux_aarch64` folder in the `deploy` directory, containing the executables `imgenc`, `llm`, `demo`, and the `lib` folder.
 
-**'param.img_start', 'param.img_end' and 'param.img_content'  in src/main.cpp should be set specially.** 
+**'img_start', 'img_end' and 'img_content' in src/main.cpp should be set specially.** 
 
 ```bash
 cd deploy
@@ -115,7 +115,7 @@ ln -s /data/models .
 # run imgenc
 ./imgenc models/qwen2-vl-vision_rk3588.rknn demo.jpg 3
 # run demo(Multimodal Example)
-./demo demo.jpg models/qwen2-vl-vision_rk3588.rknn models/qwen2-vl-llm_rk3588.rkllm 2048 4096 3  "<|vision_start|>" "<|vision_end|>" "<|image_pad|>"
+./demo demo.jpg models/qwen2-vl-vision_rk3588.rknn models/qwen2-vl-llm_rk3588.rkllm 2048 4096 3 rk3588 "<|vision_start|>" "<|vision_end|>" "<|image_pad|>"
 ```
 
 Note: max_context_len must be larger than text-token-num+image-token-num+max_new_tokens
@@ -124,13 +124,13 @@ The user can view the relevant runtime logs in the terminal and obtain the `img_
 
 Multimodal Example
 
-```
+```text
 user: <image>What is in the image?
 robot: The image depicts an astronaut on the moon, enjoying a beer. The background shows the Earth and stars, creating a surreal and futuristic scene.
 ```
 
 Pure Text Example
-```
+```text
 user: 把这句话翻译成英文: RK3588是新一代高端处理器，具有高算力、低功耗、超强多媒体、丰富数据接口等特点
 robot: The RK3588 is a new generation of high-end processors with high computational power, low power consumption, strong multimedia capabilities, and rich data interfaces.
 ```

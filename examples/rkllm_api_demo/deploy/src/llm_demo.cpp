@@ -97,7 +97,9 @@ int main(int argc, char **argv)
     param.extend_param.base_domain_id = 0;
     param.extend_param.embed_flash = 1;
 
-    int ret = rkllm_init(&llmHandle, &param, callback);
+    RKLLMCallback rkllm_callback = {};
+    rkllm_callback.result_callback = callback;
+    int ret = rkllm_init(&llmHandle, &param, &rkllm_callback);
     if (ret == 0){
         printf("rkllm init success\n");
     } else {

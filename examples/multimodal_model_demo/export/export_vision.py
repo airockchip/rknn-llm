@@ -136,6 +136,35 @@ class qwen3_vl_vision(torch.nn.Module):
         
         return self.vpm(flatten_patches, grid_thw)
 
+class qwen3_5_vl_vision(torch.nn.Module):
+    def __init__(self, vlm, batch_size):
+        super(qwen3_5_vl_vision, self).__init__()
+        self.merge_size = 2
+        self.temporal_patch_size = 2
+        self.patch_size = 16
+        self.channel = 3
+        self.vpm = vlm.visual
+        self.batch_size = batch_size
+
+    def forward(self, pixel_value, grid_thw):
+        if self.batch_size == 1:
+            patches = pixel_value.repeat(self.temporal_patch_size, 1, 1, 1)
+        elif self.batch_size % self.temporal_patch_size == 1:
+            repeat_image = pixel_value[-1:, ...].repeat(2, 1, 1, 1)
+            patches = torch.cat((pixel_value, repeat_image), dim=0)
+        else:
+            patches = pixel_value
+        grid_t, grid_h, grid_w = grid_thw[0][0], grid_thw[0][1], grid_thw[0][2]
+        patches = patches.reshape(grid_t, self.temporal_patch_size, self.channel, 
+                                  grid_h//self.merge_size, self.merge_size, self.patch_size, grid_w//self.merge_size, self.merge_size, self.patch_size)
+        patches = patches.permute(0, 3, 6, 4, 7, 2, 1, 5, 8)
+        flatten_patches = patches.reshape(grid_t * grid_h * grid_w, self.channel * self.temporal_patch_size * self.patch_size * self.patch_size)
+        vision_output = self.vpm(flatten_patches, grid_thw)
+        image_embeds = vision_output.pooler_output
+        split_sizes = (grid_thw.prod(-1) // self.merge_size**2).tolist()
+        image_embeds = torch.split(image_embeds, split_sizes)
+        return image_embeds
+
 class smolvlm_vision(torch.nn.Module):
     def __init__(self, vlm):
         super(smolvlm_vision, self).__init__()
@@ -192,7 +221,9 @@ class deepseekocr_vision(torch.nn.Module):
 if __name__ == "__main__":
     argparse = argparse.ArgumentParser()
     argparse.add_argument('--path', type=str, default='CKPT/MiniCPM-V-2_6', help='model path', required=False)
-    argparse.add_argument('--model_name', type=str, default='minicpm-v-2_6', help='model name', required=False)
+    argparse.add_argument('--model_name', type=str, default='minicpm-v-2_6',
+                        choices=['minicpm-v-2_6', 'qwen2_5-vl-3b', 'qwen3-vl', 'qwen3.5', 'smolvlm', 'internvl3-1b', 'deepseekocr'],
+                        help='model name', required=True)
     argparse.add_argument('--batch_size', type=int, default=1, help='batch size', required=False)
     argparse.add_argument('--height', type=int, default=448, help='image height', required=False)
     argparse.add_argument('--width', type=int, default=448, help='image width', required=False)
@@ -206,7 +237,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(savepath), exist_ok=True)
     if model_name == 'minicpm-v-2_6':
         model = AutoModel.from_pretrained(
-            path, trust_remote_code=True, torch_dtype=torch.float32,
+            path, trust_remote_code=True, dtype=torch.float32,
         )
         model = model.to(device=device_type, dtype=torch.float32)
         model.eval()
@@ -223,7 +254,7 @@ if __name__ == "__main__":
         from transformers import Qwen2_5_VLForConditionalGeneration
         model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             path,
-            torch_dtype=torch.float32, # 注意此处的数据类型，由于 rknn 目前仅支持 float32 ，因此需要指定；若是在加载权重时限制了数据类型，需要自行修改config.json中的 "use_flash_attn" 参数为 false
+            dtype=torch.float32, # 注意此处的数据类型，由于 rknn 目前仅支持 float32 ，因此需要指定；若是在加载权重时限制了数据类型，需要自行修改config.json中的 "use_flash_attn" 参数为 false
             low_cpu_mem_usage=True, _attn_implementation="eager",
             trust_remote_code=True).eval().to(device_type)
         pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
@@ -242,7 +273,7 @@ if __name__ == "__main__":
         from transformers import Qwen3VLForConditionalGeneration
         model = Qwen3VLForConditionalGeneration.from_pretrained(
             path,
-            torch_dtype=torch.float32, # 注意此处的数据类型，由于 rknn 目前仅支持 float32 ，因此需要指定；若是在加载权重时限制了数据类型，需要自行修改config.json中的 "use_flash_attn" 参数为 false
+            dtype=torch.float32, # 注意此处的数据类型，由于 rknn 目前仅支持 float32 ，因此需要指定；若是在加载权重时限制了数据类型，需要自行修改config.json中的 "use_flash_attn" 参数为 false
             low_cpu_mem_usage=True, _attn_implementation="eager",
             trust_remote_code=True).eval().to(device_type)
         pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
@@ -261,7 +292,7 @@ if __name__ == "__main__":
         from transformers import SmolVLMForConditionalGeneration
         model = SmolVLMForConditionalGeneration.from_pretrained(
             path,
-            torch_dtype=torch.float32,
+            dtype=torch.float32,
             _attn_implementation="eager",
         ).to(device_type)
         pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
@@ -278,7 +309,7 @@ if __name__ == "__main__":
     elif model_name == 'internvl3-1b':
         model = AutoModel.from_pretrained(
         path,
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
         low_cpu_mem_usage=True,
         trust_remote_code=True).eval().to(device_type)
         pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
@@ -289,13 +320,32 @@ if __name__ == "__main__":
         model = AutoModel.from_pretrained(
         path,
         _attn_implementation='eager',
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
         low_cpu_mem_usage=True,
         trust_remote_code=True).eval().to(device_type)
         pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
         model = deepseekocr_vision(model.model)
         model = model.to(torch.float32).eval()
         torch.onnx.export(model, pixel_values, savepath, input_names=['pixel'], opset_version=18)
+    elif model_name == 'qwen3.5':
+        from transformers import AutoModel
+        model = AutoModel.from_pretrained(
+            path,
+            dtype=torch.float32, # 注意此处的数据类型，由于 rknn 目前仅支持 float32 ，因此需要指定；若是在加载权重时限制了数据类型，需要自行修改config.json中的 "use_flash_attn" 参数为 false
+            low_cpu_mem_usage=True, _attn_implementation="eager",
+            trust_remote_code=True).eval().to(device_type)
+        pixel_values = torch.randn(args.batch_size, 3, args.height, args.width, device=model.device, dtype=torch.float32)
+        grid_thw = torch.tensor([[args.batch_size // 2 if args.batch_size% 2 == 0 else args.batch_size // 2 + 1, args.height//16, args.width//16]], dtype=torch.int64)
+        model.eval()
+        model = qwen3_5_vl_vision(model, args.batch_size)
+        out = model(pixel_values, grid_thw)
+        print("Output shape:", out[0].shape)
+        torch.onnx.export(model, 
+                    (pixel_values, grid_thw), 
+                    savepath,
+                    input_names=['pixel', 'grid_thw'],
+                    dynamic_axes={'pixel': {2: 'height', 3: 'width'}},
+                    opset_version=15)
     else:
         raise ValueError(f"Unsupported model name: {model_name}")
         exit(1)

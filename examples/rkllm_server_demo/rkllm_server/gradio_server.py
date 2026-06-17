@@ -5,6 +5,7 @@ import subprocess
 import resource
 import threading
 import time
+import signal
 import gradio as gr
 import argparse
 
@@ -66,10 +67,8 @@ class RKLLMParam(ctypes.Structure):
         ("mirostat_tau", ctypes.c_float),
         ("mirostat_eta", ctypes.c_float),
         ("skip_special_token", ctypes.c_bool),
+        ("ignore_eos_token", ctypes.c_bool),
         ("is_async", ctypes.c_bool),
-        ("img_start", ctypes.c_char_p),
-        ("img_end", ctypes.c_char_p),
-        ("img_content", ctypes.c_char_p),
         ("extend_param", RKLLMExtendParam),
     ]
 
@@ -92,14 +91,36 @@ class RKLLMTokenInput(ctypes.Structure):
         ("n_tokens", ctypes.c_size_t)
     ]
 
-class RKLLMMultiModalInput(ctypes.Structure):
+class RKLLMImageInput(ctypes.Structure):
     _fields_ = [
-        ("prompt", ctypes.c_char_p),
         ("image_embed", ctypes.POINTER(ctypes.c_float)),
         ("n_image_tokens", ctypes.c_size_t),
         ("n_image", ctypes.c_size_t),
+        ("image_start", ctypes.c_char_p),
+        ("image_end", ctypes.c_char_p),
+        ("image_content", ctypes.c_char_p),
         ("image_width", ctypes.c_size_t),
-        ("image_height", ctypes.c_size_t)
+        ("image_height", ctypes.c_size_t),
+    ]
+
+class RKLLMVideoInput(ctypes.Structure):
+    _fields_ = [
+        ("video_embed", ctypes.POINTER(ctypes.c_float)),
+        ("n_frame_tokens", ctypes.c_size_t),
+        ("n_frame_per_video", ctypes.c_size_t),
+        ("n_video", ctypes.c_size_t),
+        ("video_start", ctypes.c_char_p),
+        ("video_end", ctypes.c_char_p),
+        ("video_content", ctypes.c_char_p),
+        ("frame_width", ctypes.c_size_t),
+        ("frame_height", ctypes.c_size_t),
+    ]
+
+class RKLLMMultiModalInput(ctypes.Structure):
+    _fields_ = [
+        ("prompt", ctypes.c_char_p),
+        ("image", RKLLMImageInput),
+        ("video", RKLLMVideoInput),
     ]
 
 class RKLLMInputUnion(ctypes.Union):
@@ -111,6 +132,7 @@ class RKLLMInputUnion(ctypes.Union):
     ]
 
 class RKLLMInput(ctypes.Structure):
+    _anonymous_ = ("input_data",)
     _fields_ = [
         ("role", ctypes.c_char_p),
         ("enable_thinking", ctypes.c_bool),
@@ -129,12 +151,27 @@ class RKLLMPromptCacheParam(ctypes.Structure):
         ("prompt_cache_path", ctypes.c_char_p)
     ]
 
+class RKLLMSamplingParam(ctypes.Structure):
+    _fields_ = [
+        ("top_k", ctypes.c_int32),
+        ("top_p", ctypes.c_float),
+        ("temperature", ctypes.c_float),
+        ("repeat_penalty", ctypes.c_float),
+        ("frequency_penalty", ctypes.c_float),
+        ("presence_penalty", ctypes.c_float),
+        ("mirostat", ctypes.c_int32),
+        ("mirostat_tau", ctypes.c_float),
+        ("mirostat_eta", ctypes.c_float),
+    ]
+
 class RKLLMInferParam(ctypes.Structure):
     _fields_ = [
         ("mode", RKLLMInferMode),
         ("lora_params", ctypes.POINTER(RKLLMLoraParam)),
         ("prompt_cache_params", ctypes.POINTER(RKLLMPromptCacheParam)),
-        ("keep_history", ctypes.c_int)
+        ("sampling_params", ctypes.POINTER(RKLLMSamplingParam)),
+        ("keep_history", ctypes.c_int),
+        ("max_new_tokens", ctypes.c_int32),
     ]
 
 class RKLLMResultLastHiddenLayer(ctypes.Structure):
@@ -179,7 +216,6 @@ def callback_impl(result, userdata, state):
     global global_text, global_state, split_byte_data
     if state == LLMCallState.RKLLM_RUN_FINISH:
         global_state = state
-        print("\n")
         sys.stdout.flush()
     elif state == LLMCallState.RKLLM_RUN_ERROR:
         global_state = state
@@ -192,8 +228,21 @@ def callback_impl(result, userdata, state):
     
 
 # Connect the callback function between the Python side and the C++ side
-callback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(RKLLMResult), ctypes.c_void_p, ctypes.c_int)
-callback = callback_type(callback_impl)
+LLMResultCallback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.POINTER(RKLLMResult), ctypes.c_void_p, ctypes.c_int)
+LLMTokenizerCallback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int32, ctypes.POINTER(ctypes.c_int32), ctypes.c_int32)
+LLMGetEmbedCallback_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.POINTER(ctypes.c_int32), ctypes.c_uint64, ctypes.c_void_p, ctypes.c_uint64)
+
+class RKLLMCallback(ctypes.Structure):
+    _fields_ = [
+        ("result_callback", LLMResultCallback_type),
+        ("result_userdata", ctypes.c_void_p),
+        ("tokenizer_callback", LLMTokenizerCallback_type),
+        ("tokenizer_userdata", ctypes.c_void_p),
+        ("embed_callback", LLMGetEmbedCallback_type),
+        ("embed_userdata", ctypes.c_void_p),
+    ]
+
+callback = LLMResultCallback_type(callback_impl)
 
 # Define the RKLLM class, which includes initialization, inference, and release operations for the RKLLM model in the dynamic library
 class RKLLM(object):
@@ -218,9 +267,7 @@ class RKLLM(object):
 
         rkllm_param.is_async = False
 
-        rkllm_param.img_start = "".encode('utf-8')
-        rkllm_param.img_end = "".encode('utf-8')
-        rkllm_param.img_content = "".encode('utf-8')
+        rkllm_param.ignore_eos_token = False
 
         rkllm_param.extend_param.base_domain_id = 0
         rkllm_param.extend_param.embed_flash = 1
@@ -234,9 +281,16 @@ class RKLLM(object):
         self.handle = RKLLM_Handle_t()
 
         self.rkllm_init = rkllm_lib.rkllm_init
-        self.rkllm_init.argtypes = [ctypes.POINTER(RKLLM_Handle_t), ctypes.POINTER(RKLLMParam), callback_type]
+        self.rkllm_init.argtypes = [ctypes.POINTER(RKLLM_Handle_t), ctypes.POINTER(RKLLMParam), ctypes.POINTER(RKLLMCallback)]
         self.rkllm_init.restype = ctypes.c_int
-        ret = self.rkllm_init(ctypes.byref(self.handle), ctypes.byref(rkllm_param), callback)
+        self.callback = RKLLMCallback()
+        self.callback.result_callback = callback
+        self.callback.result_userdata = None
+        self.callback.tokenizer_callback = LLMTokenizerCallback_type()
+        self.callback.tokenizer_userdata = None
+        self.callback.embed_callback = LLMGetEmbedCallback_type()
+        self.callback.embed_userdata = None
+        ret = self.rkllm_init(ctypes.byref(self.handle), ctypes.byref(rkllm_param), ctypes.byref(self.callback))
         if (ret != 0):
             print("\nrkllm init failed\n")
             exit(0)
@@ -290,13 +344,27 @@ class RKLLM(object):
             rkllm_load_prompt_cache.restype = ctypes.c_int
             rkllm_load_prompt_cache(self.handle, ctypes.c_char_p((prompt_cache_path).encode('utf-8')))
 
-    def run(self, prompt):
+    def run(self, prompt, sampling_params=None, max_new_tokens=None):
         rkllm_input = RKLLMInput()
         rkllm_input.role = "user".encode('utf-8')
         rkllm_input.enable_thinking = ctypes.c_bool(False)
-        rkllm_input.input_mode = RKLLMInputType.RKLLM_INPUT_PROMPT
-        rkllm_input.input_data.prompt_input = ctypes.c_char_p(prompt.encode('utf-8'))
+        rkllm_input.input_type = RKLLMInputType.RKLLM_INPUT_PROMPT
+        rkllm_input.prompt_input = ctypes.c_char_p(prompt.encode('utf-8'))
+
+        # Apply per-request sampling params and max_new_tokens
+        if sampling_params is not None:
+            self.rkllm_infer_params.sampling_params = ctypes.pointer(sampling_params)
+        if max_new_tokens is not None:
+            self.rkllm_infer_params.max_new_tokens = max_new_tokens
+
         self.rkllm_run(self.handle, ctypes.byref(rkllm_input), ctypes.byref(self.rkllm_infer_params), None)
+
+        # Reset sampling_params to NULL after run (avoid dangling pointer)
+        if sampling_params is not None:
+            self.rkllm_infer_params.sampling_params = None
+        # Reset max_new_tokens to 0 after run (<=0 means use init value)
+        if max_new_tokens is not None:
+            self.rkllm_infer_params.max_new_tokens = 0
         return
 
     def release(self):
@@ -347,9 +415,20 @@ if __name__ == "__main__":
     print("==============================")
     sys.stdout.flush()
 
-    # Record the user's input prompt        
+    # Graceful shutdown on Ctrl+C
+    def shutdown_handler(signum, frame):
+        print("\n====================")
+        print("Received interrupt signal, releasing RKLLM model resources...")
+        rkllm_model.release()
+        print("====================")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown_handler)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+
+    # Record the user's input prompt (new Gradio dict format)
     def get_user_input(user_message, history):
-        history = history + [[user_message, None]]
+        history = history + [{"role": "user", "content": user_message}]
         return "", history
 
     # Retrieve the output from the RKLLM model and print it in a streaming manner
@@ -359,20 +438,36 @@ if __name__ == "__main__":
         global_text = []
         global_state = -1
 
+        # Extract the last user message content for inference.
+        # Supports both old [[user, assistant], ...] and new [{"role": ..., "content": ...}] formats.
+        user_content = ""
+        for msg in reversed(history):
+            if isinstance(msg, dict):
+                if msg.get("role") == "user":
+                    c = msg.get("content", "")
+                    if isinstance(c, list):
+                        # Multimodal format: [{"type": "text", "text": "..."}]
+                        c = " ".join(p.get("text", "") for p in c if p.get("type") == "text")
+                    user_content = c
+                    break
+            elif isinstance(msg, (list, tuple)) and len(msg) >= 1:
+                # Old format: [user_text, assistant_text]
+                user_content = msg[0] or ""
+                break
+
         # Create a thread for model inference
-        model_thread = threading.Thread(target=rkllm_model.run, args=(history[-1][0],))
+        model_thread = threading.Thread(target=rkllm_model.run, args=(user_content,))
         model_thread.start()
 
-        # history[-1][1] represents the current dialogue
-        history[-1][1] = ""
-        
-        # Wait for the model to finish running and periodically check the inference thread of the model
+        # Append a placeholder assistant message (new dict format)
+        history = history + [{"role": "assistant", "content": ""}]
+
+        # Wait for the model to finish running and periodically check the inference thread
         model_thread_finished = False
         while not model_thread_finished:
             while len(global_text) > 0:
-                history[-1][1] += global_text.pop(0)
+                history[-1]["content"] += global_text.pop(0)
                 time.sleep(0.005)
-                # Gradio automatically pushes the result returned by the yield statement when calling the then method
                 yield history
 
             model_thread.join(timeout=0.005)
@@ -398,10 +493,12 @@ if __name__ == "__main__":
 
     # Enable the event queue system.
     chatRKLLM.queue()
-    # Start the Gradio application.
-    chatRKLLM.launch()
 
-    print("====================")
-    print("RKLLM model inference completed, releasing RKLLM model resources...")
-    rkllm_model.release()
-    print("====================")
+    try:
+        # Start the Gradio application.
+        chatRKLLM.launch()
+    finally:
+        print("====================")
+        print("RKLLM model inference completed, releasing RKLLM model resources...")
+        rkllm_model.release()
+        print("====================")

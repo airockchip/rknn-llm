@@ -3,16 +3,27 @@
 #*****************************************************************************************#
 # This script is an automated setup script for the RKLLM-Server-Flask service.
 # Users can run this script to automate the deployment of the RKLLM-Server-Flask service on a Linux board.
-# Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_model_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]
+# Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_model_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]] [--adb_device [ADB Device Serial]]
 # example: ./build_rkllm_server_flask.sh --workshop /user/data --model_path /user/data/model.rkllm --platform rk3588
+# example: ./build_rkllm_server_flask.sh --workshop /user/data --model_path /user/data/model.rkllm --platform rk3588 --adb_device 1234567890abcdef
 #*****************************************************************************************#
 
 LORA_PATH=""
 PROMPT_FILE_PATH=""
+ADB_DEVICE=""
+
+# Build the adb command prefix (with optional device serial)
+function adb_cmd {
+    if [[ -n "$ADB_DEVICE" ]]; then
+        adb -s "$ADB_DEVICE" "$@"
+    else
+        adb "$@"
+    fi
+}
 
 # Function to display help
 function show_help {
-    echo "Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]]"
+    echo "Usage: ./build_rkllm_server_flask.sh --workshop [RKLLM-Server Working Path] --model_path [Absolute Path of Converted RKLLM Model on Board] --platform [Target Platform: rk3588/rk3576] [--lora_path [Lora Model Path]] [--prompt_cache_path [Prompt Cache File Path]] [--adb_device [ADB Device Serial]]"
 }
 
 # Parse command-line options
@@ -38,6 +49,10 @@ while [[ $# -gt 0 ]]; do
             PROMPT_FILE_PATH="$2"
             shift 2
             ;;
+        --adb_device)
+            ADB_DEVICE="$2"
+            shift 2
+            ;;
         --help)
             show_help
             exit 0
@@ -51,7 +66,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 #################### Check if pip and the Flask library are already installed on the board. ####################
-adb shell << EOF
+adb_cmd shell << EOF
 
 pkill -f "python3 flask_server.py"
 pkill -f "python3 gradio_server.py"
@@ -77,10 +92,10 @@ exit
 EOF
 
 #################### Push the relevant files for the server to the board. ####################
-adb shell ls $WORKING_PATH > /dev/null 2>&1
+adb_cmd shell ls $WORKING_PATH > /dev/null 2>&1
 
 if [ $? -ne 0 ]; then
-    adb shell mkdir -p $WORKING_PATH
+    adb_cmd shell mkdir -p $WORKING_PATH
     echo "-------- The rkllm_server working directory does not exist, so it has been created. --------"
 else
     echo "-------- The rkllm_server working directory already exists. --------"
@@ -92,7 +107,7 @@ cp ../../scripts/fix_freq_rk3576.sh ./rkllm_server
 cp ../../scripts/fix_freq_rk3588.sh ./rkllm_server
 cp ../../scripts/fix_freq_rv1126b.sh ./rkllm_server
 cp ../../scripts/fix_freq_rk3562.sh ./rkllm_server
-adb push ./rkllm_server $WORKING_PATH
+adb_cmd push ./rkllm_server $WORKING_PATH
 
 #################### Enter the board terminal and start the server service. ####################
 CMD="python3 flask_server.py --rkllm_model_path $MODEL_PATH --target_platform $TARGET_PLATFORM"
@@ -104,7 +119,7 @@ if [[ -n "$PROMPT_FILE_PATH" ]]; then
     CMD="$CMD --prompt_cache_path $PROMPT_FILE_PATH"
 fi
 
-adb shell << EOF
+adb_cmd shell << EOF
 # export RKLLM_LOG_LEVEL=2
 cd $WORKING_PATH/rkllm_server/
 $CMD

@@ -27,7 +27,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     find_package(OpenMP REQUIRED)
     target_link_libraries(llm_demo  ${RKLLM_RT_LIB} log OpenMP::OpenMP_CXX)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(RKLLM_RT_LIB ${RKLLM_API_PATH}/aarch64/librkllmrt.so)
+    set(RKLLM_RT_LIB ${RKLLM_API_PATH}/${CMAKE_SYSTEM_PROCESSOR}/librkllmrt.so)
     target_link_libraries(llm_demo  ${RKLLM_RT_LIB})
 endif()
 
