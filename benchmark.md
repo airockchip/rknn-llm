@@ -1,10 +1,13 @@
 # Model Performance Benchmark
 
-- This performance data were collected based on the maximum CPU and NPU frequencies of each platform. 
+- This performance data were collected based on the maximum CPU and NPU frequencies of each platform. On RK3588, `scripts/fix_freq_rk3588.sh` also attempts to pin GPU and DDR (DMC) frequencies.
+- GPU and DMC pinning requires the corresponding devfreq nodes and controls to be available. The script does not verify that each setting succeeded, so check the reported current frequencies on the target image.
 - The script for setting the frequencies is located in the scripts directory.
 - All models should be converted with `optimization_level` set to 0 to enable optimized runtime performance.
 
 ### RK3588
+
+The `w8a8` entries below refer to plain (non-grouped) W8A8 quantization, not `w8a8_g128`.
 
 | Model       | Model Size | Dtype | Seqlen | New_tokens | TTFT(ms) | Tokens/s | memory(MB) |
 | :---------- | :--------: | :---: | :----: | :--------: | :------: | :------: | :--------: |
